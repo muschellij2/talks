@@ -1,6 +1,6 @@
 ---
 title: "Neuroconductor Example: fMRI Task Processing"
-author: 'John Muschelli<br/>http://johnmuschelli.com/fmri_task_processing/<br/> Johns Hopkins Bloomberg School of Public Health'
+author: 'John Muschelli<br/>http://johnmuschelli.com/talks/fmri_task_processing/<br/> Johns Hopkins Bloomberg School of Public Health'
 output:
   ioslides_presentation:
     css: neuroconductor.css
