@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Neuroconductor Example: fMRI Task Processing</title>
+
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  <meta name="generator" content="pandoc" />
+
+
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+
+  <base target="_blank">
+
+  <script type="text/javascript">
+    var SLIDE_CONFIG = {
+      // Slide settings
+      settings: {
+                title: 'Neuroconductor Example: fMRI Task Processing',
+                        useBuilds: true,
+        usePrettify: true,
+        enableSlideAreas: true,
+        enableTouch: true,
+                        favIcon: 'bloomberg.logo.small.horizontal.blue.png',
+              },
+
+      // Author information
+      presenters: [
+            {
+        name:  'John Muschelli<br/><a href="http://johnmuschelli.com/fmri_task_processing/" class="uri">http://johnmuschelli.com/fmri_task_processing/</a><br/> Johns Hopkins Bloomberg School of Public Health' ,
+        company: '',
+        gplus: '',
+        twitter: '',
+        www: '',
+        github: ''
+      },
+            ]
+    };
+  </script>
+
+  <link href="index_files/ioslides-13.5.1/fonts/fonts.css" rel="stylesheet" />
+  <link href="index_files/ioslides-13.5.1/theme/css/default.css" rel="stylesheet" />
+  <link href="index_files/ioslides-13.5.1/theme/css/phone.css" rel="stylesheet" />
+  <script src="index_files/ioslides-13.5.1/js/modernizr.custom.45394.js"></script>
+  <script src="index_files/ioslides-13.5.1/js/prettify/prettify.js"></script>
+  <script src="index_files/ioslides-13.5.1/js/prettify/lang-r.js"></script>
+  <script src="index_files/ioslides-13.5.1/js/prettify/lang-yaml.js"></script>
+  <script src="index_files/ioslides-13.5.1/js/hammer.js"></script>
+  <script src="index_files/ioslides-13.5.1/js/slide-controller.js"></script>
+  <script src="index_files/ioslides-13.5.1/js/slide-deck.js"></script>
+
+  <style type="text/css">
+
+    b, strong {
+      font-weight: bold;
+    }
+
+    em {
+      font-style: italic;
+    }
+
+    slides > slide {
+      -webkit-transition: all 0.4s ease-in-out;
+      -moz-transition: all 0.4s ease-in-out;
+      -o-transition: all 0.4s ease-in-out;
+      transition: all 0.4s ease-in-out;
+    }
+
+    .auto-fadein {
+      -webkit-transition: opacity 0.6s ease-in;
+      -webkit-transition-delay: 0.4s;
+      -moz-transition: opacity 0.6s ease-in 0.4s;
+      -o-transition: opacity 0.6s ease-in 0.4s;
+      transition: opacity 0.6s ease-in 0.4s;
+      opacity: 0;
+    }
+
+    slides > slide:not(.nobackground):before {
+      font-size: 12pt;
+      content: "";
+      position: absolute;
+      bottom: 20px;
+      left: 60px;
+      background: url(bloomberg.logo.small.horizontal.blue.png) no-repeat 0 50%;
+      -webkit-background-size: 30px 30px;
+      -moz-background-size: 30px 30px;
+      -o-background-size: 30px 30px;
+      background-size: 30px 30px;
+      padding-left: 40px;
+      height: 30px;
+      line-height: 1.9;
+    }
+  </style>
+
+  <link rel="stylesheet" href="neuroconductor.css" />
+
+</head>
+
+<body style="opacity: 0">
+
+<slides class="layout-widescreen">
+
+  <slide class="title-slide segue nobackground">
+        <aside class="gdbar"><img src="bloomberg.logo.small.horizontal.blue.png"></aside>
+        <!-- The content of this hgroup is replaced programmatically through the slide_config.json. -->
+    <hgroup class="auto-fadein">
+      <h1 data-config-title><!-- populated from slide_config.json --></h1>
+      <h2 data-config-subtitle><!-- populated from slide_config.json --></h2>
+      <p data-config-presenter><!-- populated from slide_config.json --></p>
+          </hgroup>
+  </slide>
+
+<style type="text/css">
+article {
+  font-size: 30pt;
+}
+</style>
+
+<slide class="segue dark nobackground level1"><hgroup class = 'auto-fadein'><h2>Worked Example<br>Disclaimer: there is no universal fMRI pipeline</h2></hgroup><article  id="worked-example-disclaimer-there-is-no-universal-fmri-pipeline">
+
+</article></slide><slide class="segue dark nobackground level1"><hgroup class = 'auto-fadein'><h2><code>spm12r</code> Worked Example<br>Disclaimer: there is no universal fMRI pipeline</h2></hgroup><article  id="spm12r-worked-example-disclaimer-there-is-no-universal-fmri-pipeline">
+
+</article></slide><slide class=""><hgroup><h2>Data required for analysis</h2></hgroup><article  id="data-required-for-analysis">
+
+<ul>
+<li>One anatomical T1-weighted scan: <code>anat.nii.gz</code></li>
+<li>One 4D fMRI task-related scan: <code>fmri.nii.gz</code>. Use <code>fslmerge</code> if 3D to 4D</li>
+<li>Information on design:
+
+<ul>
+<li>onsets of stimuli</li>
+<li>duration of stimuli</li>
+</ul></li>
+<li>Order of slices (which was first slice)
+
+<ul>
+<li>or time slice measured (in ms).</li>
+</ul></li>
+<li>Repetition time (TR) from DICOM header/scanner/tech.</li>
+</ul>
+
+</article></slide><slide class=""><hgroup><h2>Worked example: DICOM conversion</h2></hgroup><article  id="worked-example-dicom-conversion">
+
+<ul>
+<li>DICOM to NIfTI: Convert the data using <code>dcm2niix</code> (<a href='https://github.com/rordenlab/dcm2niix' title=''>https://github.com/rordenlab/dcm2niix</a>).</li>
+<li><code>dcm2niir</code>: <a href='https://github.com/muschellij2/dcm2niir' title=''>https://github.com/muschellij2/dcm2niir</a></li>
+<li><code>divest</code>: <a href='https://github.com/jonclayden/divest' title=''>https://github.com/jonclayden/divest</a></li>
+</ul>
+
+</article></slide><slide class="segue dark nobackground level1"><hgroup class = 'auto-fadein'><h2>Explore the Raw Data: <br><a href='https://jhubiostatistics.shinyapps.io/neuroshiny/' title=''>https://jhubiostatistics.shinyapps.io/neuroshiny/</a></h2></hgroup><article  id="explore-the-raw-data-httpsjhubiostatistics.shinyapps.ioneuroshiny">
+
+</article></slide><slide class=""><hgroup><h2>Download the data</h2></hgroup><article  id="download-the-data">
+
+<p><a href='https://figshare.com/articles/SFO-example/5442298' title=''>https://figshare.com/articles/SFO-example/5442298</a></p>
+
+<pre class = 'prettyprint lang-r'>url = paste0(&quot;https://ndownloader.figshare.com/articles/&quot;,
+             &quot;5442298/versions/1&quot;)
+# download a temporary zip file
+zipfile = tempfile(fileext = &quot;.zip&quot;)
+res = httr::GET(url, write_disk(path = zipfile))
+####### unzip file code ... ###########
+out_files = c(&quot;anat.nii.gz&quot;, &quot;fmri.nii.gz&quot;)</pre>
+
+</article></slide><slide class=""><hgroup><h2>fMRI information</h2></hgroup><article  id="fmri-information">
+
+<pre class = 'prettyprint lang-r'>fmri_filename = &quot;fmri.nii.gz&quot;
+tr = 1.8 # seconds
+# getting nifti header
+hdr = neurobase::check_nifti_header(fmri_filename)
+
+(nslices = oro.nifti::nsli(hdr))
+(n_time_points = oro.nifti::ntim(hdr))
+time_points = seq(n_time_points)</pre>
+
+</article></slide><slide class=""><hgroup><h2>Types of Registration</h2></hgroup><article  id="types-of-registration">
+
+<ul>
+<li>Rigid-body registration (linear) - 6 degrees of freedom (dof)</li>
+</ul>
+
+<img src="rollpitchyaw.png" style="width: 50%; display: block; margin: auto;">
+
+<div style="font-size: 8pt">
+<p>Image taken from <a href='http://cnl.web.arizona.edu/imageprops.htm' title=''>http://cnl.web.arizona.edu/imageprops.htm</a></p></div>
+
+<ul>
+<li>Pitch - Think of nodding (&ldquo;yes&rdquo;)</li>
+<li>Yaw - Think of shaking head (&ldquo;no&rdquo;)</li>
+<li>Roll - Think of shoulder shrugging (&ldquo;I don’t know&rdquo;)</li>
+<li>x – left/right</li>
+<li>y – forward/backward</li>
+<li>z – jump up/down</li>
+</ul>
+
+</article></slide><slide class=""><hgroup><h2>Rigid Registration: The Math</h2></hgroup><article  id="rigid-registration-the-math">
+
+<p>For a voxel \(v\), the rigid transformation can be written as:</p>
+
+<p>\[T_{\rm rigid}(v) = Rv + t\] where \(R =\)  \[\left[\begin{array}{ccc} \cos\beta\cos\gamma&amp; \cos\alpha\sin\gamma + \sin\alpha\sin\beta\cos\gamma &amp; \sin\alpha\sin\gamma - \cos\alpha\sin\beta\cos\gamma \\
+-\cos\beta\sin\gamma &amp; \cos\alpha\cos\gamma - \sin\alpha\sin\beta\sin\gamma &amp; \sin\alpha\cos\gamma + \cos\alpha\sin\beta\sin\gamma \\
+\sin\beta &amp; -\sin\alpha\cos\beta &amp; \cos\alpha\cos\beta \end{array}\right]\] </p>
+
+<ul>
+<li>6 degrees of freedom</li>
+<li>\(3\) associated with the translation vector: \(t=(t_x, t_y, t_z)\)</li>
+<li>\(3\) associated with the rotation parameters: \(\theta=(\alpha, \beta,\gamma)\).</li>
+</ul>
+
+</article></slide><slide class=""><hgroup><h2>Image Realignment</h2></hgroup><article  id="image-realignment">
+
+<p>Realignment is referring to in this case as within-subject registration of the 4D fMRI data. We will register to the mean image.</p>
+
+</article></slide><slide class=""><hgroup><h2>Image Realignment</h2></hgroup><article  id="image-realignment-1">
+
+<pre class = 'prettyprint lang-r'>realigned = spm12_realign(filename = fmri_filename,
+  time_points = time_points,
+  quality = 0.98, separation = 3,
+  register_to = &quot;mean&quot;,
+  est_interp = &quot;bspline4&quot;, reslice_interp = &quot;bspline4&quot;)
+# reading in the mean image
+mean_img = realigned[[&quot;mean&quot;]]
+mean_nifti = readnii(mean_img)
+rpfile = realigned[[&#39;rp&#39;]]
+rp = read.table(file = rpfile, header = FALSE)
+realigned$outfiles
+realigned$mat</pre>
+
+</article></slide><slide class=""><hgroup><h2>Image Realignment</h2></hgroup><article  id="image-realignment-2">
+
+<h3>Plotting the realignment parameters</h3>
+
+<p>These can be used as regressors in motion correction for further analyses.</p>
+
+<pre class = 'prettyprint lang-r'>colnames(rp) = c(&quot;x&quot;, &quot;y&quot;, &quot;z&quot;, &quot;roll&quot;, &quot;pitch&quot;, &quot;yaw&quot;)
+head(rp, 2)</pre>
+
+<p><img src='index_files/figure-html/rp_plot-1.png' title=''/><!-- --></p>
+
+</article></slide><slide class=""><hgroup><h2>Slice timing correction - temporal alignment</h2></hgroup><article  id="slice-timing-correction---temporal-alignment">
+
+<p><img src="figures/slice_timing.png" style="width:50%; margin: auto;" alt="flow"></p>
+
+<p>From <a href='http://www.brainvoyager.com/bvqx/doc/UsersGuide/Preprocessing/SliceScanTimeCorrection.html' title=''>http://www.brainvoyager.com/bvqx/doc/UsersGuide/Preprocessing/SliceScanTimeCorrection.html</a></p>
+
+</article></slide><slide class=""><hgroup><h2>Slice timing correction - temporal alignment</h2></hgroup><article  id="slice-timing-correction---temporal-alignment-1">
+
+<ul>
+<li>Repetition time (from <code>hdr</code>)</li>
+<li>Time points (from <code>hdr</code>)</li>
+<li>Number of slices (from <code>hdr</code>)</li>
+<li>Need the reference slice (<code>ref_slice</code>),</li>
+<li>slice order: ascending, contiguous (different for descending or interleaved)</li>
+<li>Time between the first and the last slice within one scan (<code>ta</code>). <code>ta = 0</code> if you give slice order in seconds/milliseconds.</li>
+</ul>
+
+<pre class = 'prettyprint lang-r'>slice_order = c(
+  1740, 1680, 1620, 1560, 1500, 1440, 1380, 
+  1320, 1260, 1200, 1140, 1080, 1020, 960, 
+  900, 840, 780, 720, 660, 600, 540, 480, 
+  420, 360, 300, 240, 180, 120, 60, 0, 
+  1740, 1680, 1620, 1560, 1500, 1440, 1380, 
+  1320, 1260, 1200, 1140, 1080, 1020, 960, 
+  900, 840, 780, 720, 660, 600, 540, 480, 420, 
+  360, 300, 240, 180, 120, 60, 0)
+ref_slice = 900
+ta = 0</pre>
+
+</article></slide><slide class=""><hgroup><h2>Slice timing correction - temporal alignment</h2></hgroup><article  id="slice-timing-correction---temporal-alignment-2">
+
+<pre class = 'prettyprint lang-r'>aimg = spm12_slice_timing(filename = realigned$outfiles,
+  nslices = nslices,  tr = tr, slice_order = slice_order,
+  time_points = seq(n_time_points),
+  ta = ta, # since slice order given in ms 
+  ref_slice = ref_slice, prefix = &quot;a&quot;)
+print(aimg$outfile)</pre>
+
+</article></slide><slide class=""><hgroup><h2>Spatial Normalization: T1 Coregistration to Mean fMRI</h2></hgroup><article  id="spatial-normalization-t1-coregistration-to-mean-fmri">
+
+<p>We then perform the coregistration using <code>spm12_coregister_estimate</code>, where the fixed image is the mean image and the moving image is the anatomical.</p>
+
+<pre class = 'prettyprint lang-r'>t1_fname = &quot;anat.nii.gz&quot;
+coreg = spm12_coregister_estimate(
+  fixed = mean_img,
+  moving = t1_fname, 
+  cost_fun = &quot;nmi&quot;)
+coreg$outfile</pre>
+
+</article></slide><slide class=""><hgroup><h2>Spatial Normalization: T1 Coregistration to Mean fMRI</h2></hgroup><article  id="spatial-normalization-t1-coregistration-to-mean-fmri-1">
+
+<p>Nothing happened!</p>
+
+<ul>
+<li><code>spm12_coregister_estimate</code> - estimates coregistration (transforms the header)</li>
+<li><code>spm12_coregister_reslice</code> - reslices the image to the same voxel dimensions (should probably be coregistered already using <code>estimate</code>)</li>
+<li><p><code>spm12_coregister</code> - estimates and reslices all in one.</p></li>
+<li><p>Estimate the transformation, but do segmentation on native T1 space (better resolution)</p></li>
+</ul>
+
+</article></slide><slide class=""><hgroup><h2>Anatomical MRI Segmentation (and Spatial Normalize Estimation)</h2></hgroup><article  id="anatomical-mri-segmentation-and-spatial-normalize-estimation">
+
+<p>Here we perform the segmentation of the co-registered anatomical image from above. This will segment the image into 6 different regions, where the regions are gray matter, white matter, cerebrospinal fluid (CSF), bone, soft tissue, and the background.</p>
+
+<pre class = 'prettyprint lang-r'>seg = spm12_segment(
+  filename = coreg$outfile,
+  set_origin = FALSE, 
+  bias_corrected = TRUE, native = TRUE,
+  unmodulated = TRUE, modulated = TRUE, affine = &quot;mni&quot;,
+  sampling_distance = 1.5)</pre>
+
+</article></slide><slide class=""><hgroup><h2>Anatomical MRI Segmentation (and Spatial Normalize Estimation)</h2></hgroup><article  id="anatomical-mri-segmentation-and-spatial-normalize-estimation-1">
+
+<ul>
+<li><code>native</code> - native space segmentations</li>
+<li><code>modulated</code> - adjusted segmentations to constrain tissue-class volumes</li>
+<li><code>unmodulated</code> - unadjusted</li>
+<li><code>bias_corrected</code> - save bias-field corrected image</li>
+<li><code>set_origin</code> - should AC/PC alignment be done (no because we just coregistered)</li>
+</ul>
+
+</article></slide><slide class=""><hgroup><h2>Applying Spatial Normalization Transformation</h2></hgroup><article  id="applying-spatial-normalization-transformation">
+
+<p>Now that we have esimated the transformation from the T1 image, we can take that deformation and apply it to the fMRI data using <code>spm12_normalize_write</code>. Again, we are registering to the MNI template and will use a standard bounding box. We pass the anatomical, mean fMRI, and 4D fMRI data in to be transformed.</p>
+
+<pre class = 'prettyprint lang-r'>bounding_box = matrix(
+    c(-78, -112, -70, 
+      78, 76, 85), nrow = 2, 
+    byrow = TRUE)
+norm = spm12_normalize_write(
+  deformation = seg$deformation,
+  other.files = aimg$outfile,
+  bounding_box = bounding_box,
+  interp = &quot;bspline5&quot;,
+  retimg = FALSE)</pre>
+
+</article></slide><slide class=""><hgroup><h2>Applying Spatial Normalization Transformation</h2></hgroup><article  id="applying-spatial-normalization-transformation-1">
+
+<pre class = 'prettyprint lang-r'>anat_norm = spm12_normalize_write(
+  deformation = seg$deformation,
+  other.files = seg$bias_corrected,
+  bounding_box = bounding_box,
+  interp = &quot;bspline5&quot;,
+  voxel_size = c(1, 1, 1),
+  retimg = FALSE
+)</pre>
+
+</article></slide><slide class=""><hgroup><h2>Applying Spatial Normalization Transformation</h2></hgroup><article  id="applying-spatial-normalization-transformation-2">
+
+<pre class = 'prettyprint lang-r'>anat_norm2x2x2 = spm12_normalize_write(
+  deformation = seg$deformation,
+  other.files = seg$bias_corrected,
+  bounding_box = bounding_box,
+  interp = &quot;bspline5&quot;,
+  voxel_size = c(2, 2, 2), # note the resolution!!!
+  retimg = FALSE
+)  </pre>
+
+</article></slide><slide class=""><hgroup><h2>Spatial smoothing using a Gaussian</h2></hgroup><article  id="spatial-smoothing-using-a-gaussian">
+
+<p>Smoothing is specifieid using the full-width half max (FWHM) for the Gaussian smoother. Relationship between the FWHM and the Gaussian \(\sigma\):</p>
+
+<p>\[
+FWHM = \sigma \sqrt{8 \log(2)}
+\] where \(\log\) is the natural log.</p>
+
+</article></slide><slide class=""><hgroup><h2>Spatial smoothing using a Gaussian</h2></hgroup><article  id="spatial-smoothing-using-a-gaussian-1">
+
+<pre class = 'prettyprint lang-r'>smooth_norm = spm12_smooth(
+  norm$outfiles[[1]], 
+  fwhm = 5, 
+  prefix = &quot;s5&quot;,
+  retimg = FALSE)</pre>
+
+<p>In many applications, this is the data you will use for post-processing and analysis. Motion correction has usually been applied above, but some motion correct this data as well.</p>
+
+</article></slide><slide class="segue dark nobackground level1"><hgroup class = 'auto-fadein'><h2>First Level Modeling<br>Single-Subject Model</h2></hgroup><article  id="first-level-modeling-single-subject-model">
+
+</article></slide><slide class=""><hgroup><h2>Estimate Model</h2></hgroup><article  id="estimate-model">
+
+</article></slide><slide class=""><hgroup><h2>Contrast Manager - Creating Contrasts</h2></hgroup><article  id="contrast-manager---creating-contrasts"></article></slide>
+
+
+  <slide class="backdrop"></slide>
+
+</slides>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+<!-- map slide visiblity events into shiny -->
+<script>
+  (function() {
+    if (window.jQuery) {
+       window.jQuery(document).on('slideleave', function(e) {
+         window.jQuery(e.target).trigger('hidden');
+      });
+       window.jQuery(document).on('slideenter', function(e) {
+         window.jQuery(e.target).trigger('shown');
+      });
+    }
+  })();
+</script>
+
+</body>
+</html>

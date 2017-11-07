@@ -1,0 +1,7 @@
+.Rproj.user
+*.nii.gz
+*.mat
+index_cache/
+index_files/
+model-chrf/
+*.ai
