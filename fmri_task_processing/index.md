@@ -17,10 +17,9 @@ article {
 ## Data required for analysis
 
 - One anatomical T1-weighted scan: `anat.nii.gz`
-- One 4D fMRI task-related scan: `fmri.nii.gz`.  Use `fslmerge` if 3D to 4D
+- One 4D fMRI task-related scan: `fmri.nii.gz`.  
 - Information on design:
-    - onsets of stimuli
-    - duration of stimuli
+    - onsets/duration of stimuli
 - Order of slices (which was first slice) 
     - or time slice measured (in ms).
 - Repetition time (TR) from DICOM header/scanner/tech.
@@ -33,7 +32,7 @@ article {
 
 
 
-# Explore the Raw Data: <br>https://jhubiostatistics.shinyapps.io/neuroshiny/
+# Explore the Raw Data: <br><br>http://bit.ly/neuroshiny
 
 ## Download the data 
 
@@ -46,7 +45,9 @@ url = paste0("https://ndownloader.figshare.com/articles/",
 # download a temporary zip file
 zipfile = tempfile(fileext = ".zip")
 res = httr::GET(url, write_disk(path = zipfile))
-####### unzip file code ... ###########
+
+####### unzip file code (not shown) ###########
+
 out_files = c("anat.nii.gz", "fmri.nii.gz")
 ```
 
@@ -63,11 +64,43 @@ tr = 1.8 # seconds
 hdr = neurobase::check_nifti_header(fmri_filename)
 
 (nslices = oro.nifti::nsli(hdr))
+```
+
+```
+[1] 60
+```
+
+```r
 (n_time_points = oro.nifti::ntim(hdr))
+```
+
+```
+[1] 280
+```
+
+```r
 time_points = seq(n_time_points)
+hdr
+```
+
+```
+NIfTI-1 format
+  Type            : nifti
+  Data Type       : 16 (FLOAT32)
+  Bits per Pixel  : 32
+  Slice Code      : 0 (Unknown)
+  Intent Code     : 0 (None)
+  Qform Code      : 1 (Scanner_Anat)
+  Sform Code      : 2 (Aligned_Anat)
+  Dimension       : 96 x 96 x 60 x 280
+  Pixel Dimension : 2.25 x 2.25 x 2.55 x 1.8
+  Voxel Units     : mm
+  Time Units      : sec
 ```
 
 ## Types of Registration
+<div style="font-size: 20pt;">
+
 - Rigid-body registration (linear) - 6 degrees of freedom (dof)
 
 <img src="rollpitchyaw.png" style="width: 50%; display: block; margin: auto;">
@@ -78,12 +111,14 @@ Image taken from [http://cnl.web.arizona.edu/imageprops.htm](http://cnl.web.ariz
 - Pitch - Think of nodding ("yes")
 - Yaw - Think of shaking head ("no") 
 - Roll - Think of shoulder shrugging ("I don't know")
-- x – left/right
-- y – forward/backward
-- z – jump up/down 
+- x – left/right, y – forward/backward, z – jump up/down 
 
+</div>
 
 ## Rigid Registration: The Math
+
+<div style="font-size: 20pt;">
+
 For a voxel $v$, the rigid transformation can be written as:
 
 $$T_{\rm rigid}(v) = Rv + t$$
@@ -98,13 +133,14 @@ $$\left[\begin{array}{ccc} \cos\beta\cos\gamma& \cos\alpha\sin\gamma + \sin\alph
 - $3$ associated with the translation vector: $t=(t_x, t_y, t_z)$
 - $3$ associated with the rotation parameters: $\theta=(\alpha, \beta,\gamma)$. 
 
+</div>
 
 
-## Image Realignment 
+## Image Realignment: within-fMRI registration
 
-Realignment is referring to in this case as within-subject registration of the 4D fMRI data.  We will register to the mean image.
-
-
+<center>
+<img src="average.png" style="width:40%; margin: auto;" alt="flow"> 
+</center>
 
 ## Image Realignment 
 
@@ -130,7 +166,9 @@ realigned$mat
 
 ## Image Realignment 
 
-
+<center>
+<img src="realign.png" style="width:40%; margin: auto;" alt="flow"> 
+</center>
 
 ### Plotting the realignment parameters
 
@@ -146,20 +184,24 @@ head(rp, 2)
 
 ## Slice timing correction - temporal alignment
 
-<img src="figures/slice_timing.png" style="width:50%; margin: auto;" alt="flow"> 
+<center>
+<img src="slice_timing.png" style="width:60%; margin: auto;" alt="flow"> 
+</center>
 
+<div style="font-size: 20pt;">
 From http://www.brainvoyager.com/bvqx/doc/UsersGuide/Preprocessing/SliceScanTimeCorrection.html
-
+</div>
 
 ## Slice timing correction - temporal alignment
 
 
 - Repetition time (from `hdr`)
-- Time points (from `hdr`)
-- Number of slices (from `hdr`)
+- Number of time points and slices (from `hdr`)
 - Need the reference slice (`ref_slice`), 
 - slice order: ascending, contiguous (different for descending or interleaved)
 - Time between the first and the last slice within one scan (`ta`).  `ta = 0` if you give slice order in seconds/milliseconds.
+
+## Slice timing correction - temporal alignment
 
 
 ```r
@@ -173,7 +215,7 @@ slice_order = c(
   900, 840, 780, 720, 660, 600, 540, 480, 420, 
   360, 300, 240, 180, 120, 60, 0)
 ref_slice = 900
-ta = 0
+ta = 0 # since slice_order in ms
 ```
 
 

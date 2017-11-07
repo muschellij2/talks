@@ -128,12 +128,11 @@ article {
 
 <ul>
 <li>One anatomical T1-weighted scan: <code>anat.nii.gz</code></li>
-<li>One 4D fMRI task-related scan: <code>fmri.nii.gz</code>. Use <code>fslmerge</code> if 3D to 4D</li>
+<li>One 4D fMRI task-related scan: <code>fmri.nii.gz</code>.<br/></li>
 <li>Information on design:
 
 <ul>
-<li>onsets of stimuli</li>
-<li>duration of stimuli</li>
+<li>onsets/duration of stimuli</li>
 </ul></li>
 <li>Order of slices (which was first slice)
 
@@ -151,7 +150,7 @@ article {
 <li><code>divest</code>: <a href='https://github.com/jonclayden/divest' title=''>https://github.com/jonclayden/divest</a></li>
 </ul>
 
-</article></slide><slide class="segue dark nobackground level1"><hgroup class = 'auto-fadein'><h2>Explore the Raw Data: <br><a href='https://jhubiostatistics.shinyapps.io/neuroshiny/' title=''>https://jhubiostatistics.shinyapps.io/neuroshiny/</a></h2></hgroup><article  id="explore-the-raw-data-httpsjhubiostatistics.shinyapps.ioneuroshiny">
+</article></slide><slide class="segue dark nobackground level1"><hgroup class = 'auto-fadein'><h2>Explore the Raw Data: <br><br><a href='http://bit.ly/neuroshiny' title=''>http://bit.ly/neuroshiny</a></h2></hgroup><article  id="explore-the-raw-data-httpbit.lyneuroshiny">
 
 </article></slide><slide class=""><hgroup><h2>Download the data</h2></hgroup><article  id="download-the-data">
 
@@ -162,7 +161,9 @@ article {
 # download a temporary zip file
 zipfile = tempfile(fileext = &quot;.zip&quot;)
 res = httr::GET(url, write_disk(path = zipfile))
-####### unzip file code ... ###########
+
+####### unzip file code (not shown) ###########
+
 out_files = c(&quot;anat.nii.gz&quot;, &quot;fmri.nii.gz&quot;)</pre>
 
 </article></slide><slide class=""><hgroup><h2>fMRI information</h2></hgroup><article  id="fmri-information">
@@ -172,12 +173,33 @@ tr = 1.8 # seconds
 # getting nifti header
 hdr = neurobase::check_nifti_header(fmri_filename)
 
-(nslices = oro.nifti::nsli(hdr))
-(n_time_points = oro.nifti::ntim(hdr))
-time_points = seq(n_time_points)</pre>
+(nslices = oro.nifti::nsli(hdr))</pre>
+
+<pre >[1] 60</pre>
+
+<pre class = 'prettyprint lang-r'>(n_time_points = oro.nifti::ntim(hdr))</pre>
+
+<pre >[1] 280</pre>
+
+<pre class = 'prettyprint lang-r'>time_points = seq(n_time_points)
+hdr</pre>
+
+<pre >NIfTI-1 format
+  Type            : nifti
+  Data Type       : 16 (FLOAT32)
+  Bits per Pixel  : 32
+  Slice Code      : 0 (Unknown)
+  Intent Code     : 0 (None)
+  Qform Code      : 1 (Scanner_Anat)
+  Sform Code      : 2 (Aligned_Anat)
+  Dimension       : 96 x 96 x 60 x 280
+  Pixel Dimension : 2.25 x 2.25 x 2.55 x 1.8
+  Voxel Units     : mm
+  Time Units      : sec</pre>
 
 </article></slide><slide class=""><hgroup><h2>Types of Registration</h2></hgroup><article  id="types-of-registration">
 
+<div style="font-size: 20pt;">
 <ul>
 <li>Rigid-body registration (linear) - 6 degrees of freedom (dof)</li>
 </ul>
@@ -191,13 +213,12 @@ time_points = seq(n_time_points)</pre>
 <li>Pitch - Think of nodding (&ldquo;yes&rdquo;)</li>
 <li>Yaw - Think of shaking head (&ldquo;no&rdquo;)</li>
 <li>Roll - Think of shoulder shrugging (&ldquo;I don’t know&rdquo;)</li>
-<li>x – left/right</li>
-<li>y – forward/backward</li>
-<li>z – jump up/down</li>
-</ul>
+<li>x – left/right, y – forward/backward, z – jump up/down</li>
+</ul></div>
 
 </article></slide><slide class=""><hgroup><h2>Rigid Registration: The Math</h2></hgroup><article  id="rigid-registration-the-math">
 
+<div style="font-size: 20pt;">
 <p>For a voxel \(v\), the rigid transformation can be written as:</p>
 
 <p>\[T_{\rm rigid}(v) = Rv + t\] where \(R =\)  \[\left[\begin{array}{ccc} \cos\beta\cos\gamma&amp; \cos\alpha\sin\gamma + \sin\alpha\sin\beta\cos\gamma &amp; \sin\alpha\sin\gamma - \cos\alpha\sin\beta\cos\gamma \\
@@ -208,13 +229,17 @@ time_points = seq(n_time_points)</pre>
 <li>6 degrees of freedom</li>
 <li>\(3\) associated with the translation vector: \(t=(t_x, t_y, t_z)\)</li>
 <li>\(3\) associated with the rotation parameters: \(\theta=(\alpha, \beta,\gamma)\).</li>
-</ul>
+</ul></div>
+
+</article></slide><slide class=""><hgroup><h2>Image Realignment: within-fMRI registration</h2></hgroup><article  id="image-realignment-within-fmri-registration">
+
+<center>
+
+<img src="average.png" style="width:40%; margin: auto;" alt="flow">
+
+</center>
 
 </article></slide><slide class=""><hgroup><h2>Image Realignment</h2></hgroup><article  id="image-realignment">
-
-<p>Realignment is referring to in this case as within-subject registration of the 4D fMRI data. We will register to the mean image.</p>
-
-</article></slide><slide class=""><hgroup><h2>Image Realignment</h2></hgroup><article  id="image-realignment-1">
 
 <pre class = 'prettyprint lang-r'>realigned = spm12_realign(filename = fmri_filename,
   time_points = time_points,
@@ -229,7 +254,13 @@ rp = read.table(file = rpfile, header = FALSE)
 realigned$outfiles
 realigned$mat</pre>
 
-</article></slide><slide class=""><hgroup><h2>Image Realignment</h2></hgroup><article  id="image-realignment-2">
+</article></slide><slide class=""><hgroup><h2>Image Realignment</h2></hgroup><article  id="image-realignment-1">
+
+<center>
+
+<img src="realign.png" style="width:40%; margin: auto;" alt="flow">
+
+</center>
 
 <h3>Plotting the realignment parameters</h3>
 
@@ -242,20 +273,26 @@ head(rp, 2)</pre>
 
 </article></slide><slide class=""><hgroup><h2>Slice timing correction - temporal alignment</h2></hgroup><article  id="slice-timing-correction---temporal-alignment">
 
-<p><img src="figures/slice_timing.png" style="width:50%; margin: auto;" alt="flow"></p>
+<center>
 
-<p>From <a href='http://www.brainvoyager.com/bvqx/doc/UsersGuide/Preprocessing/SliceScanTimeCorrection.html' title=''>http://www.brainvoyager.com/bvqx/doc/UsersGuide/Preprocessing/SliceScanTimeCorrection.html</a></p>
+<img src="slice_timing.png" style="width:60%; margin: auto;" alt="flow">
+
+</center>
+
+<div style="font-size: 20pt;">
+<p>From <a href='http://www.brainvoyager.com/bvqx/doc/UsersGuide/Preprocessing/SliceScanTimeCorrection.html' title=''>http://www.brainvoyager.com/bvqx/doc/UsersGuide/Preprocessing/SliceScanTimeCorrection.html</a></p></div>
 
 </article></slide><slide class=""><hgroup><h2>Slice timing correction - temporal alignment</h2></hgroup><article  id="slice-timing-correction---temporal-alignment-1">
 
 <ul>
 <li>Repetition time (from <code>hdr</code>)</li>
-<li>Time points (from <code>hdr</code>)</li>
-<li>Number of slices (from <code>hdr</code>)</li>
+<li>Number of time points and slices (from <code>hdr</code>)</li>
 <li>Need the reference slice (<code>ref_slice</code>),</li>
 <li>slice order: ascending, contiguous (different for descending or interleaved)</li>
 <li>Time between the first and the last slice within one scan (<code>ta</code>). <code>ta = 0</code> if you give slice order in seconds/milliseconds.</li>
 </ul>
+
+</article></slide><slide class=""><hgroup><h2>Slice timing correction - temporal alignment</h2></hgroup><article  id="slice-timing-correction---temporal-alignment-2">
 
 <pre class = 'prettyprint lang-r'>slice_order = c(
   1740, 1680, 1620, 1560, 1500, 1440, 1380, 
@@ -267,9 +304,9 @@ head(rp, 2)</pre>
   900, 840, 780, 720, 660, 600, 540, 480, 420, 
   360, 300, 240, 180, 120, 60, 0)
 ref_slice = 900
-ta = 0</pre>
+ta = 0 # since slice_order in ms</pre>
 
-</article></slide><slide class=""><hgroup><h2>Slice timing correction - temporal alignment</h2></hgroup><article  id="slice-timing-correction---temporal-alignment-2">
+</article></slide><slide class=""><hgroup><h2>Slice timing correction - temporal alignment</h2></hgroup><article  id="slice-timing-correction---temporal-alignment-3">
 
 <pre class = 'prettyprint lang-r'>aimg = spm12_slice_timing(filename = realigned$outfiles,
   nslices = nslices,  tr = tr, slice_order = slice_order,
