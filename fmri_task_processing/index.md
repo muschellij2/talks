@@ -1,5 +1,5 @@
 # Neuroconductor Example: fMRI Task Processing
-John Muschelli<br/>http://johnmuschelli.com/fmri_task_processing/<br/> Johns Hopkins Bloomberg School of Public Health  
+John Muschelli<br/>http://johnmuschelli.com/talks/fmri_task_processing/<br/> Johns Hopkins Bloomberg School of Public Health  
 <style type="text/css">
 article {
   font-size: 30pt;
