@@ -130,7 +130,7 @@ article {
 <li>All code is found at <a href='https://github.com/muschellij2/talks/tree/master/fmri_task_processing' title=''>https://github.com/muschellij2/talks/tree/master/fmri_task_processing</a></li>
 </ul>
 
-</article></slide><slide class="segue dark nobackground level1"><hgroup class = 'auto-fadein'><h2><code>spm12r</code> Worked Example<br>Disclaimer: there is no universal fMRI pipeline<br> Many options are <strong>specific</strong> to this data analysis</h2></hgroup><article  id="spm12r-worked-example-disclaimer-there-is-no-universal-fmri-pipeline-many-options-are-specific-to-this-data-analysis">
+</article></slide><slide class="segue dark nobackground level1"><hgroup class = 'auto-fadein'><h2><code>spm12r</code> Worked Example<br><br>Disclaimer: there is no universal fMRI pipeline<br> and many options are <strong>specific</strong> to this data analysis</h2></hgroup><article  id="spm12r-worked-example-disclaimer-there-is-no-universal-fmri-pipeline-and-many-options-are-specific-to-this-data-analysis">
 
 </article></slide><slide class=""><hgroup><h2>Data required for analysis</h2></hgroup><article  id="data-required-for-analysis">
 
@@ -438,7 +438,7 @@ coreg$outfile</pre>
 <pre class = 'prettyprint lang-r'>bounding_box = matrix(
     c(-78, -112, -70, 
       78, 76, 85), nrow = 2, 
-    byrow = TRUE)
+    byrow = TRUE) # change from default to reduce empty black space
 norm = spm12_normalize_write(
   deformation = seg$deformation,
   other.files = aimg$outfile, #corrected fMRI
@@ -451,10 +451,9 @@ norm = spm12_normalize_write(
 
 </article></slide><slide class=""><hgroup><h2>Applying spatial normalization: Corrected T1</h2></hgroup><article  id="applying-spatial-normalization-corrected-t1">
 
-<pre class = 'prettyprint lang-r'>anat_norm = spm12_normalize_write(
-  deformation = seg$deformation, other.files = seg$bias_corrected,
-  bounding_box = bounding_box, interp = &quot;bspline5&quot;,
-  voxel_size = c(1, 1, 1))
+<pre class = 'prettyprint lang-r'>anat_norm = spm12_normalize_write(deformation = seg$deformation, 
+  other.files = seg$bias_corrected,  bounding_box = bounding_box, 
+  interp = &quot;bspline5&quot;, voxel_size = c(1, 1, 1))
 anat_norm$outfiles</pre>
 
 <pre >[1] &quot;wmanat.nii&quot;</pre>
@@ -463,10 +462,9 @@ anat_norm$outfiles</pre>
 
 </article></slide><slide class=""><hgroup><h2>Applying spatial normalization: T1, but 2x2x2</h2></hgroup><article  id="applying-spatial-normalization-t1-but-2x2x2">
 
-<pre class = 'prettyprint lang-r'>anat_norm2x2x2 = spm12_normalize_write(
-  deformation = seg$deformation, other.files = seg$bias_corrected,
-  bounding_box = bounding_box, interp = &quot;bspline5&quot;,
-  voxel_size = c(2, 2, 2)) # note the resolution!!!</pre>
+<pre class = 'prettyprint lang-r'>anat_norm2x2x2 = spm12_normalize_write( deformation = seg$deformation, 
+  other.files = seg$bias_corrected, bounding_box = bounding_box, 
+  interp = &quot;bspline5&quot;, voxel_size = c(2, 2, 2)) # note the resolution!!!</pre>
 
 <p><img src='index_files/figure-html/anat_norm2x2x2_show-1.png' title=''/><!-- --></p>
 
@@ -484,9 +482,9 @@ anat_norm$outfiles</pre>
 <li>Specified using the full-width half max (FWHM) for the Gaussian smoother (not \(\sigma\)): \(FWHM = \sigma \sqrt{8 \log(2)}\)</li>
 </ul>
 
-<p><img src="3dgauss.png" style="width: 50%; display: block; margin: auto;"></p>
+<p><img src="3dgauss.png" style="width: 30%; display: block; margin: auto;"></p>
 
-<div style="font-size: 20pt;">
+<div style="font-size: 10pt;">
 <p>From <a href='https://en.wikipedia.org/wiki/Gaussian_function#/media/File:Gaussian_2d.svg' title=''>https://en.wikipedia.org/wiki/Gaussian_function#/media/File:Gaussian_2d.svg</a></p></div>
 
 </article></slide><slide class=""><hgroup><h2>Spatial smoothing using a Gaussian</h2></hgroup><article  id="spatial-smoothing-using-a-gaussian-2">
@@ -507,15 +505,26 @@ anat_norm$outfiles</pre>
 <li>need the onset/duration of conditions (in seconds or scans):</li>
 </ul>
 
+<pre class = 'prettyprint lang-r'>condition_list = list(
+  list(name = &quot;LeftHand&quot;,
+       onset = c(20, 100, 180, 260, 340, 420),
+       duration = c(20, 20, 20, 20, 20, 20)
+  ),
+  list(name = &quot;RightHand&quot;,
+       onset = c(60, 140, 220, 300, 380, 460),
+       duration = c(20, 20, 20, 20, 20, 20)
+  )
+)</pre>
+
 </article></slide><slide class=""><hgroup><h2>First level modeling: single-subject model</h2></hgroup><article  id="first-level-modeling-single-subject-model-1">
 
 <ul>
 <li>Conditions are convolved with the Hemodynamic Response Function (HRF)</li>
 </ul>
 
-<p><img src="spm_hrf.png" style="width: 50%; display: block; margin: auto;"></p>
+<p><img src="spm_hrf.png" style="width: 48%; display: block; margin: auto;"></p>
 
-<div style="font-size: 20pt;">
+<div style="font-size: 10pt;">
 <p><a href='https://en.wikibooks.org/wiki/SPM/Haemodynamic_Response_Function#/media/File:SPM_hemodynamic_response_function.png' title=''>https://en.wikibooks.org/wiki/SPM/Haemodynamic_Response_Function#/media/File:SPM_hemodynamic_response_function.png</a></p></div>
 
 </article></slide><slide class=""><hgroup><h2>Estimate first level model</h2></hgroup><article  id="estimate-first-level-model">
@@ -526,27 +535,31 @@ anat_norm$outfiles</pre>
 <li><code>condition_list</code> - conditions are convolved</li>
 </ul>
 
-</article></slide><slide class=""><hgroup><h2>Model outputs</h2></hgroup><article  id="model-outputs">
+<pre class = 'prettyprint lang-r'>first_model = spm12_first_level(
+  scans = smooth_norm$outfiles,
+  n_time_points = n_time_points,
+  units = &quot;secs&quot;, slice_timed = TRUE,  tr = tr,
+  condition_list = condition_list, regressor_mat = rpfile)</pre>
+
+</article></slide><slide class=""><hgroup><h2>Model outputs: <a href='http://www.bobspunt.com/resources/teaching/single-subject-analysis/spmdoc/SPMdotMAT.pdf' title=''>Cheat Sheet</a></h2></hgroup><article  id="model-outputs-cheat-sheet">
 
 <ul>
-<li><a href='http://www.bobspunt.com/resources/teaching/single-subject-analysis/spmdoc/SPMdotMAT.pdf' title=''>Good Cheat Sheet</a></li>
 <li>beta coefficient maps of regressors and contrasts</li>
 </ul>
 
-<pre class = 'prettyprint lang-r'>betas = list.files(pattern = &quot;beta.*[.]nii&quot;)
-print(betas)</pre>
+<pre class = 'prettyprint lang-r'>betas = list.files(pattern = &quot;beta.*[.]nii&quot;); print(betas)</pre>
 
 <pre >[1] &quot;beta_0001.nii&quot; &quot;beta_0002.nii&quot; &quot;beta_0003.nii&quot; &quot;beta_0004.nii&quot;
 [5] &quot;beta_0005.nii&quot; &quot;beta_0006.nii&quot; &quot;beta_0007.nii&quot; &quot;beta_0008.nii&quot;
 [9] &quot;beta_0009.nii&quot;</pre>
 
-<pre class = 'prettyprint lang-r'>print(first_model$spmmat)</pre>
-
-<pre >[1] &quot;SPM.mat&quot;</pre>
-
 <ul>
 <li><code>SPM.mat</code> - model specification</li>
 </ul>
+
+<pre class = 'prettyprint lang-r'>print(first_model$spmmat)</pre>
+
+<pre >[1] &quot;SPM.mat&quot;</pre>
 
 </article></slide><slide class=""><hgroup><h2>Contrast Manager - Creating Contrasts</h2></hgroup><article  id="contrast-manager---creating-contrasts">
 
@@ -581,6 +594,19 @@ print(stats)</pre>
 
 <pre >[1] &quot;spmF_0003.nii&quot; &quot;spmT_0001.nii&quot; &quot;spmT_0002.nii&quot;</pre>
 
+</article></slide><slide class=""><hgroup><h2>Displaying contrasts: contrast 1 (LeftHand)</h2></hgroup><article  id="displaying-contrasts-contrast-1-lefthand">
+
+<pre class = 'prettyprint lang-r'>spmt = readnii(&quot;spmT_0001.nii&quot;)
+ortho2(norm, spmt)</pre>
+
+<p><img src='index_files/figure-html/unnamed-chunk-14-1.png' title=''/><!-- --></p>
+
+</article></slide><slide class=""><hgroup><h2>Displaying Contrasts wheere T &gt; 5</h2></hgroup><article  id="displaying-contrasts-wheere-t-5">
+
+<pre class = 'prettyprint lang-r'>ortho2(norm, spmt &gt; 5)</pre>
+
+<p><img src='index_files/figure-html/unnamed-chunk-15-1.png' title=''/><!-- --></p>
+
 </article></slide><slide class=""><hgroup><h2>There is no universal fMRI pipeline</h2></hgroup><article  id="there-is-no-universal-fmri-pipeline">
 
 <ul>
@@ -593,9 +619,18 @@ print(stats)</pre>
 <li>Similar to sensitivity analysis</li>
 </ul>
 
-</article></slide><slide class=""><hgroup><h2>References</h2></hgroup><article  id="references" class="unnumbered">
+</article></slide><slide class=""><hgroup><h2>Why spm12r</h2></hgroup><article  id="why-spm12r">
 
-<div id="refs" class="references">
+<ul>
+<li>Can integrate into your <code>R</code> pipeline</li>
+<li>May be helpful for developing new methods/simulations/testing</li>
+<li>More advanced statistical methods in R may be available</li>
+<li>If you know <code>R</code> you’re good</li>
+</ul>
+
+</article></slide><slide class=""><hgroup><h2>References</h2></hgroup><article  class="unnumbered" id="references">
+
+<div class="references" id="refs">
 <div id="ref-penny2011statistical">
 <p>Penny, William D, Karl J Friston, John T Ashburner, Stefan J Kiebel, and Thomas E Nichols. 2011. <em>Statistical Parametric Mapping: The Analysis of Functional Brain Images</em>. Academic press.</p></div></div></article></slide>
 

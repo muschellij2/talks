@@ -19,7 +19,7 @@ All of this is using the Statistical Parametric Mapping (SPM) [@penny2011statist
 - All code is found at https://github.com/muschellij2/talks/tree/master/fmri_task_processing
 
 
-# `spm12r` Worked Example<br>Disclaimer: there is no universal fMRI pipeline<br> Many options are **specific** to this data analysis
+# `spm12r` Worked Example<br><br>Disclaimer: there is no universal fMRI pipeline<br> and many options are **specific** to this data analysis
 
 
 ## Data required for analysis
@@ -379,7 +379,7 @@ We apply the deformation to the fMRI data using `spm12_normalize_write`.
 bounding_box = matrix(
     c(-78, -112, -70, 
       78, 76, 85), nrow = 2, 
-    byrow = TRUE)
+    byrow = TRUE) # change from default to reduce empty black space
 norm = spm12_normalize_write(
   deformation = seg$deformation,
   other.files = aimg$outfile, #corrected fMRI
@@ -396,10 +396,9 @@ norm = spm12_normalize_write(
 
 
 ```r
-anat_norm = spm12_normalize_write(
-  deformation = seg$deformation, other.files = seg$bias_corrected,
-  bounding_box = bounding_box, interp = "bspline5",
-  voxel_size = c(1, 1, 1))
+anat_norm = spm12_normalize_write(deformation = seg$deformation, 
+  other.files = seg$bias_corrected,  bounding_box = bounding_box, 
+  interp = "bspline5", voxel_size = c(1, 1, 1))
 anat_norm$outfiles
 ```
 
@@ -416,10 +415,9 @@ anat_norm$outfiles
 
 
 ```r
-anat_norm2x2x2 = spm12_normalize_write(
-  deformation = seg$deformation, other.files = seg$bias_corrected,
-  bounding_box = bounding_box, interp = "bspline5",
-  voxel_size = c(2, 2, 2)) # note the resolution!!!
+anat_norm2x2x2 = spm12_normalize_write( deformation = seg$deformation, 
+  other.files = seg$bias_corrected, bounding_box = bounding_box, 
+  interp = "bspline5", voxel_size = c(2, 2, 2)) # note the resolution!!!
 ```
 
 ![](index_files/figure-html/anat_norm2x2x2_show-1.png)<!-- -->
@@ -438,9 +436,9 @@ anat_norm2x2x2 = spm12_normalize_write(
 
 - Specified using the full-width half max (FWHM) for the Gaussian smoother (not $\sigma$):  $FWHM = \sigma \sqrt{8 \log(2)}$
 
-<img src="3dgauss.png" style="width: 50%; display: block; margin: auto;">
+<img src="3dgauss.png" style="width: 30%; display: block; margin: auto;">
 
-<div style="font-size: 20pt;">
+<div style="font-size: 10pt;">
 From https://en.wikipedia.org/wiki/Gaussian_function#/media/File:Gaussian_2d.svg
 </div>
 
@@ -465,15 +463,27 @@ In many applications, that smoothed data you will use for post-processing and an
 - need the onset/duration of conditions (in seconds or scans):
 
 
+```r
+condition_list = list(
+  list(name = "LeftHand",
+       onset = c(20, 100, 180, 260, 340, 420),
+       duration = c(20, 20, 20, 20, 20, 20)
+  ),
+  list(name = "RightHand",
+       onset = c(60, 140, 220, 300, 380, 460),
+       duration = c(20, 20, 20, 20, 20, 20)
+  )
+)
+```
 
 
 ## First level modeling: single-subject model
 
 - Conditions are convolved with the Hemodynamic Response Function (HRF)
 
-<img src="spm_hrf.png" style="width: 50%; display: block; margin: auto;">
+<img src="spm_hrf.png" style="width: 48%; display: block; margin: auto;">
 
-<div style="font-size: 20pt;">
+<div style="font-size: 10pt;">
 https://en.wikibooks.org/wiki/SPM/Haemodynamic_Response_Function#/media/File:SPM_hemodynamic_response_function.png
 </div>
 
@@ -488,16 +498,21 @@ https://en.wikibooks.org/wiki/SPM/Haemodynamic_Response_Function#/media/File:SPM
 - `condition_list` - conditions are convolved
 
 
+```r
+first_model = spm12_first_level(
+  scans = smooth_norm$outfiles,
+  n_time_points = n_time_points,
+  units = "secs", slice_timed = TRUE,  tr = tr,
+  condition_list = condition_list, regressor_mat = rpfile)
+```
 
-## Model outputs
+## Model outputs: [Cheat Sheet](http://www.bobspunt.com/resources/teaching/single-subject-analysis/spmdoc/SPMdotMAT.pdf)
 
-- [Good Cheat Sheet](http://www.bobspunt.com/resources/teaching/single-subject-analysis/spmdoc/SPMdotMAT.pdf)
 - beta coefficient maps of regressors and contrasts 
 
 
 ```r
-betas = list.files(pattern = "beta.*[.]nii")
-print(betas)
+betas = list.files(pattern = "beta.*[.]nii"); print(betas)
 ```
 
 ```
@@ -505,6 +520,8 @@ print(betas)
 [5] "beta_0005.nii" "beta_0006.nii" "beta_0007.nii" "beta_0008.nii"
 [9] "beta_0009.nii"
 ```
+
+- `SPM.mat` - model specification
 
 
 ```r
@@ -515,7 +532,6 @@ print(first_model$spmmat)
 [1] "SPM.mat"
 ```
 
-- `SPM.mat` - model specification
 
 ## Contrast Manager - Creating Contrasts
 
@@ -563,6 +579,26 @@ print(stats)
 [1] "spmF_0003.nii" "spmT_0001.nii" "spmT_0002.nii"
 ```
 
+## Displaying contrasts: contrast 1 (LeftHand)
+
+
+```r
+spmt = readnii("spmT_0001.nii")
+ortho2(norm, spmt)
+```
+
+![](index_files/figure-html/unnamed-chunk-14-1.png)<!-- -->
+
+## Displaying Contrasts wheere T > 5
+
+
+```r
+ortho2(norm, spmt > 5)
+```
+
+![](index_files/figure-html/unnamed-chunk-15-1.png)<!-- -->
+
+
 
 ## There is no universal fMRI pipeline
 
@@ -570,5 +606,12 @@ print(stats)
 - A few different pipelines should be tested.
     - Not necessarily all combinations, but change the "knobs" a bit
 - Similar to sensitivity analysis
+
+## Why spm12r
+
+- Can integrate into your `R` pipeline
+- May be helpful for developing new methods/simulations/testing
+- More advanced statistical methods in R may be available
+- If you know `R` you're good
 
 ## References
