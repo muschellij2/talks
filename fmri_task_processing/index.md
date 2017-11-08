@@ -13,13 +13,14 @@ article {
 ## SPM
 
 All of this is using the Statistical Parametric Mapping (SPM) [@penny2011statistical] software version 12:
+
 - requies MATLAB (for this tutorial)
-- All called through `spm12r` package: https://github.com/muschellij2/spm12r
-- Many options are **specific** to this data analysis
+- All called through [`spm12r` package](https://github.com/muschellij2/spm12r)
 - All code is found at https://github.com/muschellij2/talks/tree/master/fmri_task_processing
 
 
-# `spm12r` Worked Example<br>Disclaimer: there is no universal fMRI pipeline
+# `spm12r` Worked Example<br>Disclaimer: there is no universal fMRI pipeline<br> Many options are **specific** to this data analysis
+
 
 ## Data required for analysis
 
@@ -65,9 +66,7 @@ out_files = c("anat.nii.gz", "fmri.nii.gz")
 ```r
 fmri_filename = "fmri.nii.gz"
 tr = 1.8 # seconds
-# getting nifti header
-hdr = neurobase::check_nifti_header(fmri_filename)
-
+hdr = neurobase::check_nifti_header(fmri_filename) # nifti header
 (nslices = oro.nifti::nsli(hdr))
 ```
 
@@ -107,11 +106,11 @@ NIfTI-1 format
 
 ## Explore the Data
 
-The first part of any preprocessing pipeline should be to use exploratory techniques to investigate the raw image data and detect possible problems and artifacts.
+The first part of any preprocessing pipeline should be to use exploratory techniques to investigate  detect possible problems and artifacts.
 
-fMRI data often contain transient spike artifacts and slow drift over time.
+fMRI data often contain transient spike artifacts and slow drift.
 
-An exploratory technique such as principal components analysis (PCA) can be used to look for spike-related artifacts.
+An exploratory technique such as principal components analysis (PCA) can be used.
 
 (courtesy of Martin Lindquist)
 
@@ -168,25 +167,27 @@ $$\left[\begin{array}{ccc} \cos\beta\cos\gamma& \cos\alpha\sin\gamma + \sin\alph
 realigned = spm12_realign(filename = fmri_filename,
   time_points = seq(n_time_points),
   quality = 0.98, separation = 3,
-  register_to = "mean",
-  est_interp = "bspline4", reslice_interp = "bspline4")
+  register_to = "mean", est_interp = "bspline4", reslice_interp = "bspline4")
 # reading in the mean image
 mean_img = realigned[["mean"]]
 mean_nifti = readnii(mean_img)
-rpfile = realigned[['rp']]
-rp = read.table(file = rpfile, header = FALSE)
 realigned$outfiles
-realigned$mat
 ```
-
 
 ```
 [1] "rfmri.nii"
 ```
 
+```r
+realigned$mat
+```
+
 ```
 [1] "fmri.mat"
 ```
+
+
+
 
 
 ## Image Realignment 
@@ -195,135 +196,52 @@ realigned$mat
 <img src="realign.png" style="width:40%; margin: auto;" alt="flow"> 
 </center>
 
-### Plotting the realignment parameters
-
-These can be used as regressors in motion correction for further analyses.
+## Plotting the realignment parameters
 
 
-```r
-colnames(rp) = c("x", "y", "z", "roll", "pitch", "yaw")
-head(rp, 2)
-```
 
-![](index_files/figure-html/rp_plot-1.png)<!-- -->
+<img src="index_files/figure-html/rp_plot-1.png" style="display: block; margin: auto;" />
 
 ## Slice timing correction - temporal alignment
 
 <center>
-<img src="slice_timing.png" style="width:60%; margin: auto;" alt="flow"> 
+<img src="st.png" style="width:90%; margin: auto;" alt="flow"> 
 </center>
 
 <div style="font-size: 20pt;">
-From http://www.brainvoyager.com/bvqx/doc/UsersGuide/Preprocessing/SliceScanTimeCorrection.html
+(courtesy of Martin Lindquist)
 </div>
 
 
 
 ## Slice timing correction - temporal alignment
 
-- Repetition time (from `hdr`)
-- Number of time points and slices (from `hdr`)
-- Need the reference slice (`ref_slice`), 
 - slice order: descending, dual-coil (different for ascending or interleaved)
-- Time between the first and the last slice within one scan (`ta`).  `ta = 0` if you give slice order in seconds/milliseconds.
-
-## Slice timing correction - temporal alignment
-
+- Need to know this from DICOM/design
 
 ```r
-slice_order = c(
-  1740, 1680, 1620, 1560, 1500, 1440, 1380, 
-  1320, 1260, 1200, 1140, 1080, 1020, 960, 
-  900, 840, 780, 720, 660, 600, 540, 480, 
-  420, 360, 300, 240, 180, 120, 60, 0, 
-  1740, 1680, 1620, 1560, 1500, 1440, 1380, 
-  1320, 1260, 1200, 1140, 1080, 1020, 960, 
-  900, 840, 780, 720, 660, 600, 540, 480, 420, 
-  360, 300, 240, 180, 120, 60, 0)
+slice_order = c(1740, 1680, 1620, 1560, 1500, 1440, 1380, 
+  1320, 1260, 1200, 1140, 1080, 1020, 960, 900, 840, 780, 
+  720, 660, 600, 540, 480, 420, 360, 300, 240, 180, 120, 60, 
+  0, 1740, 1680, 1620, 1560, 1500, 1440, 1380, 1320, 1260, 
+  1200, 1140, 1080, 1020, 960, 900, 840, 780, 720, 660, 600, 
+  540, 480, 420, 360, 300, 240, 180, 120, 60, 0)
 ref_slice = 900
 ta = 0 # since slice_order in ms
 ```
 
 
-## <img src="slice_timing_slow.gif" style="width: 50%; display: block; margin: auto;">
+## What does this order mean?<br> <img src="slice_timing_slow.gif" style="width: 50%; display: block; margin: auto;">
 
 
-## Slice timing correction - temporal alignment
+## Data needed for slice timing correction
+
+- Repetition time (from `hdr`)
+- Number of time points and slices (from `hdr`)
+- Slice order + need the reference slice (`ref_slice`), 
+- Time between the first and the last slice within one scan (`ta`).  `ta = 0` if you give slice order in seconds/milliseconds.
 
 
-```r
-########################
-# first slice is the bottom
-########################
-times = slice_order/1000
-# need 60 - because how image works and it's ascending. 60 is bottom
-df = data.frame(time = times, slice = 60 - seq(times))
-df = dplyr::arrange(df, time)
-plot(x = df$time, y = df$slice, pch = 19, type = "n", xlim = c(0, 1.8))
-segments(x0 = df$time, y0 = df$slice, x1 = df$time + 0.25)
-```
-
-![](index_files/figure-html/unnamed-chunk-4-1.png)<!-- -->
-
-```r
-x = nifti(mean_nifti)
-x = cal_img(x)
-x@.Data <- aperm(x, c(2, 3, 1))
-col = gray(0:64/64)
-zlim <- c(x@cal_min, x@cal_max)
-breaks <- c(zlim[1], 
-            seq(min(zlim, na.rm = TRUE), 
-                max(zlim, 
-                    na.rm = TRUE), 
-                length = length(col) - 1), zlim[2])
-dims = dim(x)
-X <- nrow(x)
-Y <- ncol(x)
-z = 48
-splits = split(df, df$time)
-ref_df = splits[[as.character(ref_slice/1000)]]
-oldpar <- par(no.readonly = TRUE)
-
-fname = "slice_timing.gif"
-if (!file.exists(fname)) {
-  animation::saveGIF({
-    par(mfrow = c(1,1), mar = rep(0, 4), 
-        bg = "black")  
-    for (i in seq_along(splits)) {
-      idf = splits[[i]]
-      time_slice = unique(idf$time)
-      graphics::image(1:X, 1:Y, x[, , z], col = col, 
-                      breaks = breaks, bg = "black")
-      abline(h = idf$slice, col = "red", lwd = 5)
-      abline(h = ref_df$slice, col = "blue", lwd = 5)
-      text(x = 14, y = 50, 
-           labels = paste0("Time = ", time_slice, "s"), 
-           cex = 1.2, col = "white")
-    }
-  }, movie.name = "fname", interval = 1.8/length(splits))
-}
-
-fname = "slice_timing_slow.gif"
-if (!file.exists(fname)) {
-  animation::saveGIF({
-    par(mfrow = c(1,1), mar = rep(0, 4), 
-        bg = "black")  
-    for (i in seq_along(splits)) {
-      idf = splits[[i]]
-      time_slice = unique(idf$time)
-      graphics::image(1:X, 1:Y, x[, , z], col = col, 
-                      breaks = breaks, bg = "black")
-      abline(h = idf$slice, col = "red", lwd = 5)
-      abline(h = ref_df$slice, col = "blue", lwd = 5)
-      text(x = 14, y = 50, 
-           labels = paste0("Time = ", time_slice, "s"), 
-           cex = 1.2, col = "white")
-    }
-  }, movie.name = fname, 
-  interval = 1.8/length(splits) * 2)
-}
-par(oldpar)
-```
 
 
 
@@ -332,19 +250,40 @@ par(oldpar)
 
 ```r
 aimg = spm12_slice_timing(filename = realigned$outfiles,
-  nslices = nslices,  tr = tr, slice_order = slice_order,
+  nslices = nslices,  
+  tr = tr, slice_order = slice_order,
   time_points = seq(n_time_points),
   ta = ta, # since slice order given in ms 
-  ref_slice = ref_slice, prefix = "a")
+  ref_slice = ref_slice, 
+  prefix = "a")
 print(aimg$outfile)
 ```
 
 
 
 
+## After lice timing correction
+
+<center>
+<img src="st2.png" style="width:90%; margin: auto;" alt="flow"> 
+</center>
+
+<div style="font-size: 20pt;">
+(courtesy of Martin Lindquist)
+</div>
+
+
 ## T1 Coregistration to Mean fMRI
 
-We then perform the coregistration using `spm12_coregister_estimate`, where the fixed image is the mean image and the moving image is the anatomical.
+We then perform the coregistration of the mean image (fixed) and T1 (moving):
+
+<center>
+<img src="coreg.png" style="width:70%; margin: auto;" alt="flow"> 
+</center>
+
+## T1 Coregistration to Mean fMRI
+
+Coregistration is estimated using `spm12_coregister_estimate`:
 
 
 ```r
@@ -361,13 +300,11 @@ coreg$outfile
 [1] "anat.nii"
 ```
 
-## T1 Coregistration to Mean fMRI
-
-Nothing happened!
+## Output file was the same: nothing happened!
 
 - `spm12_coregister_estimate` - estimates coregistration (transforms the header)
 - `spm12_coregister_reslice` - reslices the image to the same voxel dimensions (should probably be coregistered already using `estimate`)
-- `spm12_coregister` - estimates and reslices all in one.
+- `spm12_coregister` - estimates and reslices
 
 - Estimate the transformation, but do segmentation on native T1 space (better resolution)
 
@@ -399,13 +336,15 @@ seg = spm12_segment(
 
 <img src="index_files/figure-html/hard_seg-1.png" style="display: block; margin: auto;" />
 
+## Anatomical MRI Segmentation: CSF/WM/GM 
+
 <img src="index_files/figure-html/hard_seg2-1.png" style="display: block; margin: auto;" />
 
 
 ## Spatial normalization to MNI
 
 - My brain is not the same size/shape as your brain
-- But I want to look at information across subjects spatially
+- Want to look across subjects spatially
 - Spatial normalization allows us to transform the data, stretching and scaling the data (nonlinearly) to a standard brain.
 - MNI (Montreal Neurological Institute) is the most commonly used (ICBM MNI152 of some sort, http://www.bic.mni.mcgill.ca/ServicesAtlases/ICBM152NLin2009).  
 
@@ -414,7 +353,7 @@ seg = spm12_segment(
 Affine + Non-linear transform (invertible)
 
 <center>
-<img src="nonlin.png" style="width:40%; margin: auto;" alt="flow"> 
+<img src="nonlin.png" style="width:80%; margin: auto;" alt="flow"> 
 </center>
 
 ## Spatial normalization to MNI: already done
@@ -448,48 +387,58 @@ norm = spm12_normalize_write(
   interp = "bspline5")
 ```
 
-## Applying spatial normalization: T1
+## Applying spatial normalization: fMRI
+
+![](index_files/figure-html/norm_show-1.png)<!-- -->
+
+## Applying spatial normalization: Corrected T1
 
 
 
 ```r
 anat_norm = spm12_normalize_write(
-  deformation = seg$deformation,
-  other.files = seg$bias_corrected,
-  bounding_box = bounding_box,
-  interp = "bspline5",
-  voxel_size = c(1, 1, 1),
-  retimg = FALSE
-)
+  deformation = seg$deformation, other.files = seg$bias_corrected,
+  bounding_box = bounding_box, interp = "bspline5",
+  voxel_size = c(1, 1, 1))
+anat_norm$outfiles
 ```
+
+
+```
+[1] "wmanat.nii"
+```
+
+![](index_files/figure-html/anat_norm_show-1.png)<!-- -->
+
+
 
 ## Applying spatial normalization: T1, but 2x2x2
 
 
 ```r
 anat_norm2x2x2 = spm12_normalize_write(
-  deformation = seg$deformation,
-  other.files = seg$bias_corrected,
-  bounding_box = bounding_box,
-  interp = "bspline5",
-  voxel_size = c(2, 2, 2), # note the resolution!!!
-  retimg = FALSE
-)  
+  deformation = seg$deformation, other.files = seg$bias_corrected,
+  bounding_box = bounding_box, interp = "bspline5",
+  voxel_size = c(2, 2, 2)) # note the resolution!!!
 ```
 
+![](index_files/figure-html/anat_norm2x2x2_show-1.png)<!-- -->
 
 
 ## Spatial smoothing using a Gaussian
 
 - Spatial smoothing should signal to noise depending on the size of activation
-- Specified using the full-width half max (FWHM) for the Gaussian smoother.  
 
-Relationship between the FWHM and the Gaussian $\sigma$:
+- Typically, the amount of smoothing is chosen a priori
 
-$$
-FWHM = \sigma \sqrt{8 \log(2)}
-$$
-where $\log$ is the natural log.  
+- Usually global smoothing (same amount at each voxel), but can be adaptive (`adimpro` pacakge)
+
+
+## Spatial smoothing using a Gaussian
+
+- Specified using the full-width half max (FWHM) for the Gaussian smoother (not $\sigma$):  $FWHM = \sigma \sqrt{8 \log(2)}$
+
+<img src="3dgauss.png" style="width: 50%; display: block; margin: auto;">
 
 <div style="font-size: 20pt;">
 From https://en.wikipedia.org/wiki/Gaussian_function#/media/File:Gaussian_2d.svg
@@ -498,44 +447,121 @@ From https://en.wikipedia.org/wiki/Gaussian_function#/media/File:Gaussian_2d.svg
 
 ## Spatial smoothing using a Gaussian
 
-- Spatial smoothing should signal to noise depending on the size of activation
-- Specified using the full-width half max (FWHM) for the Gaussian smoother.  
-– Typically, the amount of smoothing is chosen a priori and independently of the data. (ML)
-– Usually global smoothing (same amount at each voxel), but can be adaptive (`adimpro` pacakge)
-
-Relationship between the FWHM and the Gaussian $\sigma$:
-
-$$
-FWHM = \sigma \sqrt{8 \log(2)}
-$$
-where $\log$ is the natural log.  
-
-
-
-
-## Spatial smoothing using a Gaussian
-
 
 ```r
 smooth_norm = spm12_smooth(
-  norm$outfiles[[1]], 
-  fwhm = 5, 
-  prefix = "s5",
-  retimg = FALSE)
+  norm$outfiles[[1]], fwhm = 5, 
+  prefix = "s5")
 ```
 
-In many applications, this is the data you will use for post-processing and analysis.  Motion correction has usually been applied above, but some motion correct this data as well. 
+![](index_files/figure-html/smooth_norm_show-1.png)<!-- -->
 
-## First Level Modeling<br>Single-Subject Model
+## First level modeling: Single-subject model
 
-## Estimate Model 
+In many applications, that smoothed data you will use for post-processing and analysis.  Motion correction has usually been applied above, but some realign this again.
 
+## Conditions of the experiment (block design)
+
+- need the onset/duration of conditions (in seconds or scans):
+
+
+
+
+## First level modeling: single-subject model
+
+- Conditions are convolved with the Hemodynamic Response Function (HRF)
+
+<img src="spm_hrf.png" style="width: 50%; display: block; margin: auto;">
+
+<div style="font-size: 20pt;">
+https://en.wikibooks.org/wiki/SPM/Haemodynamic_Response_Function#/media/File:SPM_hemodynamic_response_function.png
+</div>
+
+
+
+
+
+## Estimate first level model
+
+- General linear model (GLM) (not **Generalized**)
+- `regressor_mat` - motion parameters and other "confounders" (not convolved with HRF) 
+- `condition_list` - conditions are convolved
+
+
+
+## Model outputs
+
+- [Good Cheat Sheet](http://www.bobspunt.com/resources/teaching/single-subject-analysis/spmdoc/SPMdotMAT.pdf)
+- beta coefficient maps of regressors and contrasts 
+
+
+```r
+betas = list.files(pattern = "beta.*[.]nii")
+print(betas)
+```
+
+```
+[1] "beta_0001.nii" "beta_0002.nii" "beta_0003.nii" "beta_0004.nii"
+[5] "beta_0005.nii" "beta_0006.nii" "beta_0007.nii" "beta_0008.nii"
+[9] "beta_0009.nii"
+```
+
+
+```r
+print(first_model$spmmat)
+```
+
+```
+[1] "SPM.mat"
+```
+
+- `SPM.mat` - model specification
+
+## Contrast Manager - Creating Contrasts
+
+- can make T-statistic of F statistic maps
+- `weights` indicate which coefficients
+
+
+```r
+contrasts = list(
+  list(name = "LeftHand", weights = c(1, rep(0, 7)),
+    replicate = "none", type = "T" ),
+  list(name = "RightHand", weights = c(0, 1, rep(0, 6)),
+       replicate = "none", type = "T"), 
+  list(name = "AllEffects",
+       weights = rbind(
+         c(1, rep(0, 7)),
+         c(0, 1, rep(0, 6))
+       ), replicate = "none", type = "F")   )
+```
 
 ## Contrast Manager - Creating Contrasts
 
 
+```r
+contrast_res = spm12_contrast_manager(spm = first_model$spmmat,
+  delete_existing = TRUE, contrast_list = contrasts)
+```
 
 
+```r
+cons = list.files(pattern = "con.*[.]nii")
+print(cons)
+```
+
+```
+[1] "con_0001.nii" "con_0002.nii"
+```
+
+```r
+stats = list.files(pattern = "spm(T|F).*[.]nii")
+print(stats)
+```
+
+```
+[1] "spmF_0003.nii" "spmT_0001.nii" "spmT_0002.nii"
+```
 
 
 ## There is no universal fMRI pipeline

@@ -122,9 +122,15 @@ article {
 
 <slide class=""><hgroup><h2>SPM</h2></hgroup><article  id="spm">
 
-<p>All of this is using the Statistical Parametric Mapping (SPM) <span class="cite">(Penny et al. 2011)</span> software version 12: - requies MATLAB (for this tutorial) - All called through <code>spm12r</code> package: <a href='https://github.com/muschellij2/spm12r' title=''>https://github.com/muschellij2/spm12r</a> - Many options are <strong>specific</strong> to this data analysis - All code is found at <a href='https://github.com/muschellij2/talks/tree/master/fmri_task_processing' title=''>https://github.com/muschellij2/talks/tree/master/fmri_task_processing</a></p>
+<p>All of this is using the Statistical Parametric Mapping (SPM) <span class="cite">(Penny et al. 2011)</span> software version 12:</p>
 
-</article></slide><slide class="segue dark nobackground level1"><hgroup class = 'auto-fadein'><h2><code>spm12r</code> Worked Example<br>Disclaimer: there is no universal fMRI pipeline</h2></hgroup><article  id="spm12r-worked-example-disclaimer-there-is-no-universal-fmri-pipeline">
+<ul>
+<li>requies MATLAB (for this tutorial)</li>
+<li>All called through <a href='https://github.com/muschellij2/spm12r' title=''><code>spm12r</code> package</a></li>
+<li>All code is found at <a href='https://github.com/muschellij2/talks/tree/master/fmri_task_processing' title=''>https://github.com/muschellij2/talks/tree/master/fmri_task_processing</a></li>
+</ul>
+
+</article></slide><slide class="segue dark nobackground level1"><hgroup class = 'auto-fadein'><h2><code>spm12r</code> Worked Example<br>Disclaimer: there is no universal fMRI pipeline<br> Many options are <strong>specific</strong> to this data analysis</h2></hgroup><article  id="spm12r-worked-example-disclaimer-there-is-no-universal-fmri-pipeline-many-options-are-specific-to-this-data-analysis">
 
 </article></slide><slide class=""><hgroup><h2>Data required for analysis</h2></hgroup><article  id="data-required-for-analysis">
 
@@ -170,9 +176,7 @@ out_files = c(&quot;anat.nii.gz&quot;, &quot;fmri.nii.gz&quot;)</pre>
 
 <pre class = 'prettyprint lang-r'>fmri_filename = &quot;fmri.nii.gz&quot;
 tr = 1.8 # seconds
-# getting nifti header
-hdr = neurobase::check_nifti_header(fmri_filename)
-
+hdr = neurobase::check_nifti_header(fmri_filename) # nifti header
 (nslices = oro.nifti::nsli(hdr))</pre>
 
 <pre >[1] 60</pre>
@@ -200,11 +204,11 @@ hdr = neurobase::check_nifti_header(fmri_filename)
 
 </article></slide><slide class=""><hgroup><h2>Explore the Data</h2></hgroup><article  id="explore-the-data">
 
-<p>The first part of any preprocessing pipeline should be to use exploratory techniques to investigate the raw image data and detect possible problems and artifacts.</p>
+<p>The first part of any preprocessing pipeline should be to use exploratory techniques to investigate detect possible problems and artifacts.</p>
 
-<p>fMRI data often contain transient spike artifacts and slow drift over time.</p>
+<p>fMRI data often contain transient spike artifacts and slow drift.</p>
 
-<p>An exploratory technique such as principal components analysis (PCA) can be used to look for spike-related artifacts.</p>
+<p>An exploratory technique such as principal components analysis (PCA) can be used.</p>
 
 <p>(courtesy of Martin Lindquist)</p>
 
@@ -255,17 +259,15 @@ hdr = neurobase::check_nifti_header(fmri_filename)
 <pre class = 'prettyprint lang-r'>realigned = spm12_realign(filename = fmri_filename,
   time_points = seq(n_time_points),
   quality = 0.98, separation = 3,
-  register_to = &quot;mean&quot;,
-  est_interp = &quot;bspline4&quot;, reslice_interp = &quot;bspline4&quot;)
+  register_to = &quot;mean&quot;, est_interp = &quot;bspline4&quot;, reslice_interp = &quot;bspline4&quot;)
 # reading in the mean image
 mean_img = realigned[[&quot;mean&quot;]]
 mean_nifti = readnii(mean_img)
-rpfile = realigned[[&#39;rp&#39;]]
-rp = read.table(file = rpfile, header = FALSE)
-realigned$outfiles
-realigned$mat</pre>
+realigned$outfiles</pre>
 
 <pre >[1] &quot;rfmri.nii&quot;</pre>
+
+<pre class = 'prettyprint lang-r'>realigned$mat</pre>
 
 <pre >[1] &quot;fmri.mat&quot;</pre>
 
@@ -277,136 +279,83 @@ realigned$mat</pre>
 
 </center>
 
-<h3>Plotting the realignment parameters</h3>
+</article></slide><slide class=""><hgroup><h2>Plotting the realignment parameters</h2></hgroup><article  id="plotting-the-realignment-parameters">
 
-<p>These can be used as regressors in motion correction for further analyses.</p>
-
-<pre class = 'prettyprint lang-r'>colnames(rp) = c(&quot;x&quot;, &quot;y&quot;, &quot;z&quot;, &quot;roll&quot;, &quot;pitch&quot;, &quot;yaw&quot;)
-head(rp, 2)</pre>
-
-<p><img src='index_files/figure-html/rp_plot-1.png' title=''/><!-- --></p>
+<p><img src="index_files/figure-html/rp_plot-1.png" style="display: block; margin: auto;" /></p>
 
 </article></slide><slide class=""><hgroup><h2>Slice timing correction - temporal alignment</h2></hgroup><article  id="slice-timing-correction---temporal-alignment">
 
 <center>
 
-<img src="slice_timing.png" style="width:60%; margin: auto;" alt="flow">
+<img src="st.png" style="width:90%; margin: auto;" alt="flow">
 
 </center>
 
 <div style="font-size: 20pt;">
-<p>From <a href='http://www.brainvoyager.com/bvqx/doc/UsersGuide/Preprocessing/SliceScanTimeCorrection.html' title=''>http://www.brainvoyager.com/bvqx/doc/UsersGuide/Preprocessing/SliceScanTimeCorrection.html</a></p></div>
+<p>(courtesy of Martin Lindquist)</p></div>
 
 </article></slide><slide class=""><hgroup><h2>Slice timing correction - temporal alignment</h2></hgroup><article  id="slice-timing-correction---temporal-alignment-1">
 
 <ul>
+<li>slice order: descending, dual-coil (different for ascending or interleaved)</li>
+<li>Need to know this from DICOM/design</li>
+</ul>
+
+<pre class = 'prettyprint lang-r'>slice_order = c(1740, 1680, 1620, 1560, 1500, 1440, 1380, 
+  1320, 1260, 1200, 1140, 1080, 1020, 960, 900, 840, 780, 
+  720, 660, 600, 540, 480, 420, 360, 300, 240, 180, 120, 60, 
+  0, 1740, 1680, 1620, 1560, 1500, 1440, 1380, 1320, 1260, 
+  1200, 1140, 1080, 1020, 960, 900, 840, 780, 720, 660, 600, 
+  540, 480, 420, 360, 300, 240, 180, 120, 60, 0)
+ref_slice = 900
+ta = 0 # since slice_order in ms</pre>
+
+</article></slide><slide class=""><hgroup><h2>What does this order mean?<br> <img src="slice_timing_slow.gif" style="width: 50%; display: block; margin: auto;"></h2></hgroup><article  id="what-does-this-order-mean">
+
+</article></slide><slide class=""><hgroup><h2>Data needed for slice timing correction</h2></hgroup><article  id="data-needed-for-slice-timing-correction">
+
+<ul>
 <li>Repetition time (from <code>hdr</code>)</li>
 <li>Number of time points and slices (from <code>hdr</code>)</li>
-<li>Need the reference slice (<code>ref_slice</code>),</li>
-<li>slice order: descending, dual-coil (different for ascending or interleaved)</li>
+<li>Slice order + need the reference slice (<code>ref_slice</code>),</li>
 <li>Time between the first and the last slice within one scan (<code>ta</code>). <code>ta = 0</code> if you give slice order in seconds/milliseconds.</li>
 </ul>
 
 </article></slide><slide class=""><hgroup><h2>Slice timing correction - temporal alignment</h2></hgroup><article  id="slice-timing-correction---temporal-alignment-2">
 
-<pre class = 'prettyprint lang-r'>slice_order = c(
-  1740, 1680, 1620, 1560, 1500, 1440, 1380, 
-  1320, 1260, 1200, 1140, 1080, 1020, 960, 
-  900, 840, 780, 720, 660, 600, 540, 480, 
-  420, 360, 300, 240, 180, 120, 60, 0, 
-  1740, 1680, 1620, 1560, 1500, 1440, 1380, 
-  1320, 1260, 1200, 1140, 1080, 1020, 960, 
-  900, 840, 780, 720, 660, 600, 540, 480, 420, 
-  360, 300, 240, 180, 120, 60, 0)
-ref_slice = 900
-ta = 0 # since slice_order in ms</pre>
-
-</article></slide><slide class=""><hgroup><h2><img src="slice_timing_slow.gif" style="width: 50%; display: block; margin: auto;"></h2></hgroup><article  id="section">
-
-</article></slide><slide class=""><hgroup><h2>Slice timing correction - temporal alignment</h2></hgroup><article  id="slice-timing-correction---temporal-alignment-3">
-
-<pre class = 'prettyprint lang-r'>########################
-# first slice is the bottom
-########################
-times = slice_order/1000
-# need 60 - because how image works and it&#39;s ascending. 60 is bottom
-df = data.frame(time = times, slice = 60 - seq(times))
-df = dplyr::arrange(df, time)
-plot(x = df$time, y = df$slice, pch = 19, type = &quot;n&quot;, xlim = c(0, 1.8))
-segments(x0 = df$time, y0 = df$slice, x1 = df$time + 0.25)</pre>
-
-<p><img src='index_files/figure-html/unnamed-chunk-4-1.png' title=''/><!-- --></p>
-
-<pre class = 'prettyprint lang-r'>x = nifti(mean_nifti)
-x = cal_img(x)
-x@.Data &lt;- aperm(x, c(2, 3, 1))
-col = gray(0:64/64)
-zlim &lt;- c(x@cal_min, x@cal_max)
-breaks &lt;- c(zlim[1], 
-            seq(min(zlim, na.rm = TRUE), 
-                max(zlim, 
-                    na.rm = TRUE), 
-                length = length(col) - 1), zlim[2])
-dims = dim(x)
-X &lt;- nrow(x)
-Y &lt;- ncol(x)
-z = 48
-splits = split(df, df$time)
-ref_df = splits[[as.character(ref_slice/1000)]]
-oldpar &lt;- par(no.readonly = TRUE)
-
-fname = &quot;slice_timing.gif&quot;
-if (!file.exists(fname)) {
-  animation::saveGIF({
-    par(mfrow = c(1,1), mar = rep(0, 4), 
-        bg = &quot;black&quot;)  
-    for (i in seq_along(splits)) {
-      idf = splits[[i]]
-      time_slice = unique(idf$time)
-      graphics::image(1:X, 1:Y, x[, , z], col = col, 
-                      breaks = breaks, bg = &quot;black&quot;)
-      abline(h = idf$slice, col = &quot;red&quot;, lwd = 5)
-      abline(h = ref_df$slice, col = &quot;blue&quot;, lwd = 5)
-      text(x = 14, y = 50, 
-           labels = paste0(&quot;Time = &quot;, time_slice, &quot;s&quot;), 
-           cex = 1.2, col = &quot;white&quot;)
-    }
-  }, movie.name = &quot;fname&quot;, interval = 1.8/length(splits))
-}
-
-fname = &quot;slice_timing_slow.gif&quot;
-if (!file.exists(fname)) {
-  animation::saveGIF({
-    par(mfrow = c(1,1), mar = rep(0, 4), 
-        bg = &quot;black&quot;)  
-    for (i in seq_along(splits)) {
-      idf = splits[[i]]
-      time_slice = unique(idf$time)
-      graphics::image(1:X, 1:Y, x[, , z], col = col, 
-                      breaks = breaks, bg = &quot;black&quot;)
-      abline(h = idf$slice, col = &quot;red&quot;, lwd = 5)
-      abline(h = ref_df$slice, col = &quot;blue&quot;, lwd = 5)
-      text(x = 14, y = 50, 
-           labels = paste0(&quot;Time = &quot;, time_slice, &quot;s&quot;), 
-           cex = 1.2, col = &quot;white&quot;)
-    }
-  }, movie.name = fname, 
-  interval = 1.8/length(splits) * 2)
-}
-par(oldpar)</pre>
-
-</article></slide><slide class=""><hgroup><h2>Slice timing correction - temporal alignment</h2></hgroup><article  id="slice-timing-correction---temporal-alignment-4">
-
 <pre class = 'prettyprint lang-r'>aimg = spm12_slice_timing(filename = realigned$outfiles,
-  nslices = nslices,  tr = tr, slice_order = slice_order,
+  nslices = nslices,  
+  tr = tr, slice_order = slice_order,
   time_points = seq(n_time_points),
   ta = ta, # since slice order given in ms 
-  ref_slice = ref_slice, prefix = &quot;a&quot;)
+  ref_slice = ref_slice, 
+  prefix = &quot;a&quot;)
 print(aimg$outfile)</pre>
+
+</article></slide><slide class=""><hgroup><h2>After lice timing correction</h2></hgroup><article  id="after-lice-timing-correction">
+
+<center>
+
+<img src="st2.png" style="width:90%; margin: auto;" alt="flow">
+
+</center>
+
+<div style="font-size: 20pt;">
+<p>(courtesy of Martin Lindquist)</p></div>
 
 </article></slide><slide class=""><hgroup><h2>T1 Coregistration to Mean fMRI</h2></hgroup><article  id="t1-coregistration-to-mean-fmri">
 
-<p>We then perform the coregistration using <code>spm12_coregister_estimate</code>, where the fixed image is the mean image and the moving image is the anatomical.</p>
+<p>We then perform the coregistration of the mean image (fixed) and T1 (moving):</p>
+
+<center>
+
+<img src="coreg.png" style="width:70%; margin: auto;" alt="flow">
+
+</center>
+
+</article></slide><slide class=""><hgroup><h2>T1 Coregistration to Mean fMRI</h2></hgroup><article  id="t1-coregistration-to-mean-fmri-1">
+
+<p>Coregistration is estimated using <code>spm12_coregister_estimate</code>:</p>
 
 <pre class = 'prettyprint lang-r'>t1_fname = &quot;anat.nii.gz&quot;
 coreg = spm12_coregister_estimate(
@@ -417,14 +366,12 @@ coreg$outfile</pre>
 
 <pre >[1] &quot;anat.nii&quot;</pre>
 
-</article></slide><slide class=""><hgroup><h2>T1 Coregistration to Mean fMRI</h2></hgroup><article  id="t1-coregistration-to-mean-fmri-1">
-
-<p>Nothing happened!</p>
+</article></slide><slide class=""><hgroup><h2>Output file was the same: nothing happened!</h2></hgroup><article  id="output-file-was-the-same-nothing-happened">
 
 <ul>
 <li><code>spm12_coregister_estimate</code> - estimates coregistration (transforms the header)</li>
 <li><code>spm12_coregister_reslice</code> - reslices the image to the same voxel dimensions (should probably be coregistered already using <code>estimate</code>)</li>
-<li><p><code>spm12_coregister</code> - estimates and reslices all in one.</p></li>
+<li><p><code>spm12_coregister</code> - estimates and reslices</p></li>
 <li><p>Estimate the transformation, but do segmentation on native T1 space (better resolution)</p></li>
 </ul>
 
@@ -453,13 +400,15 @@ coreg$outfile</pre>
 
 <p><img src="index_files/figure-html/hard_seg-1.png" style="display: block; margin: auto;" /></p>
 
+</article></slide><slide class=""><hgroup><h2>Anatomical MRI Segmentation: CSF/WM/GM</h2></hgroup><article  id="anatomical-mri-segmentation-csfwmgm">
+
 <p><img src="index_files/figure-html/hard_seg2-1.png" style="display: block; margin: auto;" /></p>
 
 </article></slide><slide class=""><hgroup><h2>Spatial normalization to MNI</h2></hgroup><article  id="spatial-normalization-to-mni">
 
 <ul>
 <li>My brain is not the same size/shape as your brain</li>
-<li>But I want to look at information across subjects spatially</li>
+<li>Want to look across subjects spatially</li>
 <li>Spatial normalization allows us to transform the data, stretching and scaling the data (nonlinearly) to a standard brain.</li>
 <li>MNI (Montreal Neurological Institute) is the most commonly used (ICBM MNI152 of some sort, <a href='http://www.bic.mni.mcgill.ca/ServicesAtlases/ICBM152NLin2009' title=''>http://www.bic.mni.mcgill.ca/ServicesAtlases/ICBM152NLin2009</a>).</li>
 </ul>
@@ -470,7 +419,7 @@ coreg$outfile</pre>
 
 <center>
 
-<img src="nonlin.png" style="width:40%; margin: auto;" alt="flow">
+<img src="nonlin.png" style="width:80%; margin: auto;" alt="flow">
 
 </center>
 
@@ -496,72 +445,141 @@ norm = spm12_normalize_write(
   bounding_box = bounding_box,
   interp = &quot;bspline5&quot;)</pre>
 
-</article></slide><slide class=""><hgroup><h2>Applying spatial normalization: T1</h2></hgroup><article  id="applying-spatial-normalization-t1">
+</article></slide><slide class=""><hgroup><h2>Applying spatial normalization: fMRI</h2></hgroup><article  id="applying-spatial-normalization-fmri-1">
+
+<p><img src='index_files/figure-html/norm_show-1.png' title=''/><!-- --></p>
+
+</article></slide><slide class=""><hgroup><h2>Applying spatial normalization: Corrected T1</h2></hgroup><article  id="applying-spatial-normalization-corrected-t1">
 
 <pre class = 'prettyprint lang-r'>anat_norm = spm12_normalize_write(
-  deformation = seg$deformation,
-  other.files = seg$bias_corrected,
-  bounding_box = bounding_box,
-  interp = &quot;bspline5&quot;,
-  voxel_size = c(1, 1, 1),
-  retimg = FALSE
-)</pre>
+  deformation = seg$deformation, other.files = seg$bias_corrected,
+  bounding_box = bounding_box, interp = &quot;bspline5&quot;,
+  voxel_size = c(1, 1, 1))
+anat_norm$outfiles</pre>
+
+<pre >[1] &quot;wmanat.nii&quot;</pre>
+
+<p><img src='index_files/figure-html/anat_norm_show-1.png' title=''/><!-- --></p>
 
 </article></slide><slide class=""><hgroup><h2>Applying spatial normalization: T1, but 2x2x2</h2></hgroup><article  id="applying-spatial-normalization-t1-but-2x2x2">
 
 <pre class = 'prettyprint lang-r'>anat_norm2x2x2 = spm12_normalize_write(
-  deformation = seg$deformation,
-  other.files = seg$bias_corrected,
-  bounding_box = bounding_box,
-  interp = &quot;bspline5&quot;,
-  voxel_size = c(2, 2, 2), # note the resolution!!!
-  retimg = FALSE
-)  </pre>
+  deformation = seg$deformation, other.files = seg$bias_corrected,
+  bounding_box = bounding_box, interp = &quot;bspline5&quot;,
+  voxel_size = c(2, 2, 2)) # note the resolution!!!</pre>
+
+<p><img src='index_files/figure-html/anat_norm2x2x2_show-1.png' title=''/><!-- --></p>
 
 </article></slide><slide class=""><hgroup><h2>Spatial smoothing using a Gaussian</h2></hgroup><article  id="spatial-smoothing-using-a-gaussian">
 
 <ul>
-<li>Spatial smoothing should signal to noise depending on the size of activation</li>
-<li>Specified using the full-width half max (FWHM) for the Gaussian smoother.</li>
+<li><p>Spatial smoothing should signal to noise depending on the size of activation</p></li>
+<li><p>Typically, the amount of smoothing is chosen a priori</p></li>
+<li><p>Usually global smoothing (same amount at each voxel), but can be adaptive (<code>adimpro</code> pacakge)</p></li>
 </ul>
-
-<p>Relationship between the FWHM and the Gaussian \(\sigma\):</p>
-
-<p>\[
-FWHM = \sigma \sqrt{8 \log(2)}
-\] where \(\log\) is the natural log.</p>
-
-<div style="font-size: 20pt;">
-<p>From <a href='https://en.wikipedia.org/wiki/Gaussian_function#/media/File:Gaussian_2d.svg' title=''>https://en.wikipedia.org/wiki/Gaussian_function#/media/File:Gaussian_2d.svg</a></p></div>
 
 </article></slide><slide class=""><hgroup><h2>Spatial smoothing using a Gaussian</h2></hgroup><article  id="spatial-smoothing-using-a-gaussian-1">
 
 <ul>
-<li>Spatial smoothing should signal to noise depending on the size of activation</li>
-<li>Specified using the full-width half max (FWHM) for the Gaussian smoother.<br/>– Typically, the amount of smoothing is chosen a priori and independently of the data. (ML) – Usually global smoothing (same amount at each voxel), but can be adaptive (<code>adimpro</code> pacakge)</li>
+<li>Specified using the full-width half max (FWHM) for the Gaussian smoother (not \(\sigma\)): \(FWHM = \sigma \sqrt{8 \log(2)}\)</li>
 </ul>
 
-<p>Relationship between the FWHM and the Gaussian \(\sigma\):</p>
+<p><img src="3dgauss.png" style="width: 50%; display: block; margin: auto;"></p>
 
-<p>\[
-FWHM = \sigma \sqrt{8 \log(2)}
-\] where \(\log\) is the natural log.</p>
+<div style="font-size: 20pt;">
+<p>From <a href='https://en.wikipedia.org/wiki/Gaussian_function#/media/File:Gaussian_2d.svg' title=''>https://en.wikipedia.org/wiki/Gaussian_function#/media/File:Gaussian_2d.svg</a></p></div>
 
 </article></slide><slide class=""><hgroup><h2>Spatial smoothing using a Gaussian</h2></hgroup><article  id="spatial-smoothing-using-a-gaussian-2">
 
 <pre class = 'prettyprint lang-r'>smooth_norm = spm12_smooth(
-  norm$outfiles[[1]], 
-  fwhm = 5, 
-  prefix = &quot;s5&quot;,
-  retimg = FALSE)</pre>
+  norm$outfiles[[1]], fwhm = 5, 
+  prefix = &quot;s5&quot;)</pre>
 
-<p>In many applications, this is the data you will use for post-processing and analysis. Motion correction has usually been applied above, but some motion correct this data as well.</p>
+<p><img src='index_files/figure-html/smooth_norm_show-1.png' title=''/><!-- --></p>
 
-</article></slide><slide class=""><hgroup><h2>First Level Modeling<br>Single-Subject Model</h2></hgroup><article  id="first-level-modeling-single-subject-model">
+</article></slide><slide class=""><hgroup><h2>First level modeling: Single-subject model</h2></hgroup><article  id="first-level-modeling-single-subject-model">
 
-</article></slide><slide class=""><hgroup><h2>Estimate Model</h2></hgroup><article  id="estimate-model">
+<p>In many applications, that smoothed data you will use for post-processing and analysis. Motion correction has usually been applied above, but some realign this again.</p>
+
+</article></slide><slide class=""><hgroup><h2>Conditions of the experiment (block design)</h2></hgroup><article  id="conditions-of-the-experiment-block-design">
+
+<ul>
+<li>need the onset/duration of conditions (in seconds or scans):</li>
+</ul>
+
+</article></slide><slide class=""><hgroup><h2>First level modeling: single-subject model</h2></hgroup><article  id="first-level-modeling-single-subject-model-1">
+
+<ul>
+<li>Conditions are convolved with the Hemodynamic Response Function (HRF)</li>
+</ul>
+
+<p><img src="spm_hrf.png" style="width: 50%; display: block; margin: auto;"></p>
+
+<div style="font-size: 20pt;">
+<p><a href='https://en.wikibooks.org/wiki/SPM/Haemodynamic_Response_Function#/media/File:SPM_hemodynamic_response_function.png' title=''>https://en.wikibooks.org/wiki/SPM/Haemodynamic_Response_Function#/media/File:SPM_hemodynamic_response_function.png</a></p></div>
+
+</article></slide><slide class=""><hgroup><h2>Estimate first level model</h2></hgroup><article  id="estimate-first-level-model">
+
+<ul>
+<li>General linear model (GLM) (not <strong>Generalized</strong>)</li>
+<li><code>regressor_mat</code> - motion parameters and other &ldquo;confounders&rdquo; (not convolved with HRF)</li>
+<li><code>condition_list</code> - conditions are convolved</li>
+</ul>
+
+</article></slide><slide class=""><hgroup><h2>Model outputs</h2></hgroup><article  id="model-outputs">
+
+<ul>
+<li><a href='http://www.bobspunt.com/resources/teaching/single-subject-analysis/spmdoc/SPMdotMAT.pdf' title=''>Good Cheat Sheet</a></li>
+<li>beta coefficient maps of regressors and contrasts</li>
+</ul>
+
+<pre class = 'prettyprint lang-r'>betas = list.files(pattern = &quot;beta.*[.]nii&quot;)
+print(betas)</pre>
+
+<pre >[1] &quot;beta_0001.nii&quot; &quot;beta_0002.nii&quot; &quot;beta_0003.nii&quot; &quot;beta_0004.nii&quot;
+[5] &quot;beta_0005.nii&quot; &quot;beta_0006.nii&quot; &quot;beta_0007.nii&quot; &quot;beta_0008.nii&quot;
+[9] &quot;beta_0009.nii&quot;</pre>
+
+<pre class = 'prettyprint lang-r'>print(first_model$spmmat)</pre>
+
+<pre >[1] &quot;SPM.mat&quot;</pre>
+
+<ul>
+<li><code>SPM.mat</code> - model specification</li>
+</ul>
 
 </article></slide><slide class=""><hgroup><h2>Contrast Manager - Creating Contrasts</h2></hgroup><article  id="contrast-manager---creating-contrasts">
+
+<ul>
+<li>can make T-statistic of F statistic maps</li>
+<li><code>weights</code> indicate which coefficients</li>
+</ul>
+
+<pre class = 'prettyprint lang-r'>contrasts = list(
+  list(name = &quot;LeftHand&quot;, weights = c(1, rep(0, 7)),
+    replicate = &quot;none&quot;, type = &quot;T&quot; ),
+  list(name = &quot;RightHand&quot;, weights = c(0, 1, rep(0, 6)),
+       replicate = &quot;none&quot;, type = &quot;T&quot;), 
+  list(name = &quot;AllEffects&quot;,
+       weights = rbind(
+         c(1, rep(0, 7)),
+         c(0, 1, rep(0, 6))
+       ), replicate = &quot;none&quot;, type = &quot;F&quot;)   )</pre>
+
+</article></slide><slide class=""><hgroup><h2>Contrast Manager - Creating Contrasts</h2></hgroup><article  id="contrast-manager---creating-contrasts-1">
+
+<pre class = 'prettyprint lang-r'>contrast_res = spm12_contrast_manager(spm = first_model$spmmat,
+  delete_existing = TRUE, contrast_list = contrasts)</pre>
+
+<pre class = 'prettyprint lang-r'>cons = list.files(pattern = &quot;con.*[.]nii&quot;)
+print(cons)</pre>
+
+<pre >[1] &quot;con_0001.nii&quot; &quot;con_0002.nii&quot;</pre>
+
+<pre class = 'prettyprint lang-r'>stats = list.files(pattern = &quot;spm(T|F).*[.]nii&quot;)
+print(stats)</pre>
+
+<pre >[1] &quot;spmF_0003.nii&quot; &quot;spmT_0001.nii&quot; &quot;spmT_0002.nii&quot;</pre>
 
 </article></slide><slide class=""><hgroup><h2>There is no universal fMRI pipeline</h2></hgroup><article  id="there-is-no-universal-fmri-pipeline">
 
