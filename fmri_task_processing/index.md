@@ -10,7 +10,14 @@ article {
 
 
 
-# Worked Example<br>Disclaimer: there is no universal fMRI pipeline
+## SPM
+
+All of this is using the Statistical Parametric Mapping (SPM) [@penny2011statistical] software version 12:
+- requies MATLAB (for this tutorial)
+- All called through `spm12r` package: https://github.com/muschellij2/spm12r
+- Many options are **specific** to this data analysis
+- All code is found at https://github.com/muschellij2/talks/tree/master/fmri_task_processing
+
 
 # `spm12r` Worked Example<br>Disclaimer: there is no universal fMRI pipeline
 
@@ -31,8 +38,6 @@ article {
 - `divest`: https://github.com/jonclayden/divest
 
 
-
-# Explore the Raw Data: <br><br>http://bit.ly/neuroshiny
 
 ## Download the data 
 
@@ -79,7 +84,6 @@ hdr = neurobase::check_nifti_header(fmri_filename)
 ```
 
 ```r
-time_points = seq(n_time_points)
 hdr
 ```
 
@@ -97,6 +101,20 @@ NIfTI-1 format
   Voxel Units     : mm
   Time Units      : sec
 ```
+
+
+# Explore the Raw Data: <br><br>http://bit.ly/neuroshiny
+
+## Explore the Data
+
+The first part of any preprocessing pipeline should be to use exploratory techniques to investigate the raw image data and detect possible problems and artifacts.
+
+fMRI data often contain transient spike artifacts and slow drift over time.
+
+An exploratory technique such as principal components analysis (PCA) can be used to look for spike-related artifacts.
+
+(courtesy of Martin Lindquist)
+
 
 ## Types of Registration
 <div style="font-size: 20pt;">
@@ -148,7 +166,7 @@ $$\left[\begin{array}{ccc} \cos\beta\cos\gamma& \cos\alpha\sin\gamma + \sin\alph
 
 ```r
 realigned = spm12_realign(filename = fmri_filename,
-  time_points = time_points,
+  time_points = seq(n_time_points),
   quality = 0.98, separation = 3,
   register_to = "mean",
   est_interp = "bspline4", reslice_interp = "bspline4")
@@ -162,6 +180,13 @@ realigned$mat
 ```
 
 
+```
+[1] "rfmri.nii"
+```
+
+```
+[1] "fmri.mat"
+```
 
 
 ## Image Realignment 
@@ -192,13 +217,14 @@ head(rp, 2)
 From http://www.brainvoyager.com/bvqx/doc/UsersGuide/Preprocessing/SliceScanTimeCorrection.html
 </div>
 
-## Slice timing correction - temporal alignment
 
+
+## Slice timing correction - temporal alignment
 
 - Repetition time (from `hdr`)
 - Number of time points and slices (from `hdr`)
 - Need the reference slice (`ref_slice`), 
-- slice order: ascending, contiguous (different for descending or interleaved)
+- slice order: descending, dual-coil (different for ascending or interleaved)
 - Time between the first and the last slice within one scan (`ta`).  `ta = 0` if you give slice order in seconds/milliseconds.
 
 ## Slice timing correction - temporal alignment
@@ -219,6 +245,88 @@ ta = 0 # since slice_order in ms
 ```
 
 
+## <img src="slice_timing_slow.gif" style="width: 50%; display: block; margin: auto;">
+
+
+## Slice timing correction - temporal alignment
+
+
+```r
+########################
+# first slice is the bottom
+########################
+times = slice_order/1000
+# need 60 - because how image works and it's ascending. 60 is bottom
+df = data.frame(time = times, slice = 60 - seq(times))
+df = dplyr::arrange(df, time)
+plot(x = df$time, y = df$slice, pch = 19, type = "n", xlim = c(0, 1.8))
+segments(x0 = df$time, y0 = df$slice, x1 = df$time + 0.25)
+```
+
+![](index_files/figure-html/unnamed-chunk-4-1.png)<!-- -->
+
+```r
+x = nifti(mean_nifti)
+x = cal_img(x)
+x@.Data <- aperm(x, c(2, 3, 1))
+col = gray(0:64/64)
+zlim <- c(x@cal_min, x@cal_max)
+breaks <- c(zlim[1], 
+            seq(min(zlim, na.rm = TRUE), 
+                max(zlim, 
+                    na.rm = TRUE), 
+                length = length(col) - 1), zlim[2])
+dims = dim(x)
+X <- nrow(x)
+Y <- ncol(x)
+z = 48
+splits = split(df, df$time)
+ref_df = splits[[as.character(ref_slice/1000)]]
+oldpar <- par(no.readonly = TRUE)
+
+fname = "slice_timing.gif"
+if (!file.exists(fname)) {
+  animation::saveGIF({
+    par(mfrow = c(1,1), mar = rep(0, 4), 
+        bg = "black")  
+    for (i in seq_along(splits)) {
+      idf = splits[[i]]
+      time_slice = unique(idf$time)
+      graphics::image(1:X, 1:Y, x[, , z], col = col, 
+                      breaks = breaks, bg = "black")
+      abline(h = idf$slice, col = "red", lwd = 5)
+      abline(h = ref_df$slice, col = "blue", lwd = 5)
+      text(x = 14, y = 50, 
+           labels = paste0("Time = ", time_slice, "s"), 
+           cex = 1.2, col = "white")
+    }
+  }, movie.name = "fname", interval = 1.8/length(splits))
+}
+
+fname = "slice_timing_slow.gif"
+if (!file.exists(fname)) {
+  animation::saveGIF({
+    par(mfrow = c(1,1), mar = rep(0, 4), 
+        bg = "black")  
+    for (i in seq_along(splits)) {
+      idf = splits[[i]]
+      time_slice = unique(idf$time)
+      graphics::image(1:X, 1:Y, x[, , z], col = col, 
+                      breaks = breaks, bg = "black")
+      abline(h = idf$slice, col = "red", lwd = 5)
+      abline(h = ref_df$slice, col = "blue", lwd = 5)
+      text(x = 14, y = 50, 
+           labels = paste0("Time = ", time_slice, "s"), 
+           cex = 1.2, col = "white")
+    }
+  }, movie.name = fname, 
+  interval = 1.8/length(splits) * 2)
+}
+par(oldpar)
+```
+
+
+
 ## Slice timing correction - temporal alignment
 
 
@@ -234,7 +342,7 @@ print(aimg$outfile)
 
 
 
-## Spatial Normalization: T1 Coregistration to Mean fMRI
+## T1 Coregistration to Mean fMRI
 
 We then perform the coregistration using `spm12_coregister_estimate`, where the fixed image is the mean image and the moving image is the anatomical.
 
@@ -249,8 +357,11 @@ coreg$outfile
 ```
 
 
+```
+[1] "anat.nii"
+```
 
-## Spatial Normalization: T1 Coregistration to Mean fMRI
+## T1 Coregistration to Mean fMRI
 
 Nothing happened!
 
@@ -261,9 +372,9 @@ Nothing happened!
 - Estimate the transformation, but do segmentation on native T1 space (better resolution)
 
 
-## Anatomical MRI Segmentation (and Spatial Normalize Estimation)
+## Anatomical MRI Segmentation 
 
-Here we perform the segmentation of the co-registered anatomical image from above.  This will segment the image into 6 different regions, where the regions are gray matter, white matter, cerebrospinal fluid (CSF), bone, soft tissue, and the background.  
+Here we segment the image into 6 different regions, where the regions are gray matter, white matter, cerebrospinal fluid (CSF), bone, soft tissue, and the background.  
 
 
 ```r
@@ -276,7 +387,7 @@ seg = spm12_segment(
 ```
 
 
-## Anatomical MRI Segmentation (and Spatial Normalize Estimation)
+## Anatomical MRI Segmentation 
 
 - `native` - native space segmentations
 - `modulated` - adjusted segmentations to constrain tissue-class volumes
@@ -284,9 +395,45 @@ seg = spm12_segment(
 - `bias_corrected` - save bias-field corrected image
 - `set_origin` - should AC/PC alignment be done (no because we just coregistered)
 
-## Applying Spatial Normalization Transformation
+## Anatomical MRI Segmentation 
 
-Now that we have esimated the transformation from the T1 image, we can take that deformation and apply it to the fMRI data using `spm12_normalize_write`.  Again, we are registering to the MNI template and will use a standard bounding box.  We pass the anatomical, mean fMRI, and 4D fMRI data in to be transformed.  
+<img src="index_files/figure-html/hard_seg-1.png" style="display: block; margin: auto;" />
+
+<img src="index_files/figure-html/hard_seg2-1.png" style="display: block; margin: auto;" />
+
+
+## Spatial normalization to MNI
+
+- My brain is not the same size/shape as your brain
+- But I want to look at information across subjects spatially
+- Spatial normalization allows us to transform the data, stretching and scaling the data (nonlinearly) to a standard brain.
+- MNI (Montreal Neurological Institute) is the most commonly used (ICBM MNI152 of some sort, http://www.bic.mni.mcgill.ca/ServicesAtlases/ICBM152NLin2009).  
+
+## Spatial normalization to MNI
+
+Affine + Non-linear transform (invertible)
+
+<center>
+<img src="nonlin.png" style="width:40%; margin: auto;" alt="flow"> 
+</center>
+
+## Spatial normalization to MNI: already done
+
+The segmentation was done by warping the T1 to the MNI template and that transform/deformation in the segmentation output:
+
+
+```r
+seg$deformation
+```
+
+
+```
+[1] "y_anat.nii"
+```
+
+## Applying spatial normalization: fMRI
+
+We apply the deformation to the fMRI data using `spm12_normalize_write`.  
 
 
 ```r
@@ -296,13 +443,12 @@ bounding_box = matrix(
     byrow = TRUE)
 norm = spm12_normalize_write(
   deformation = seg$deformation,
-  other.files = aimg$outfile,
+  other.files = aimg$outfile, #corrected fMRI
   bounding_box = bounding_box,
-  interp = "bspline5",
-  retimg = FALSE)
+  interp = "bspline5")
 ```
 
-## Applying Spatial Normalization Transformation
+## Applying spatial normalization: T1
 
 
 
@@ -317,7 +463,7 @@ anat_norm = spm12_normalize_write(
 )
 ```
 
-## Applying Spatial Normalization Transformation
+## Applying spatial normalization: T1, but 2x2x2
 
 
 ```r
@@ -335,12 +481,36 @@ anat_norm2x2x2 = spm12_normalize_write(
 
 ## Spatial smoothing using a Gaussian
 
-Smoothing is specifieid using the full-width half max (FWHM) for the Gaussian smoother.  Relationship between the FWHM and the Gaussian $\sigma$:
+- Spatial smoothing should signal to noise depending on the size of activation
+- Specified using the full-width half max (FWHM) for the Gaussian smoother.  
+
+Relationship between the FWHM and the Gaussian $\sigma$:
 
 $$
 FWHM = \sigma \sqrt{8 \log(2)}
 $$
 where $\log$ is the natural log.  
+
+<div style="font-size: 20pt;">
+From https://en.wikipedia.org/wiki/Gaussian_function#/media/File:Gaussian_2d.svg
+</div>
+
+
+## Spatial smoothing using a Gaussian
+
+- Spatial smoothing should signal to noise depending on the size of activation
+- Specified using the full-width half max (FWHM) for the Gaussian smoother.  
+– Typically, the amount of smoothing is chosen a priori and independently of the data. (ML)
+– Usually global smoothing (same amount at each voxel), but can be adaptive (`adimpro` pacakge)
+
+Relationship between the FWHM and the Gaussian $\sigma$:
+
+$$
+FWHM = \sigma \sqrt{8 \log(2)}
+$$
+where $\log$ is the natural log.  
+
+
 
 
 ## Spatial smoothing using a Gaussian
@@ -356,7 +526,7 @@ smooth_norm = spm12_smooth(
 
 In many applications, this is the data you will use for post-processing and analysis.  Motion correction has usually been applied above, but some motion correct this data as well. 
 
-# First Level Modeling<br>Single-Subject Model
+## First Level Modeling<br>Single-Subject Model
 
 ## Estimate Model 
 
@@ -368,3 +538,11 @@ In many applications, this is the data you will use for post-processing and anal
 
 
 
+## There is no universal fMRI pipeline
+
+- Each step has inherent drawback and limitation (spatial resolution, artifact smoothing, etc.)
+- A few different pipelines should be tested.
+    - Not necessarily all combinations, but change the "knobs" a bit
+- Similar to sensitivity analysis
+
+## References
