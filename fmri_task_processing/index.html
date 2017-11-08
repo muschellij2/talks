@@ -474,18 +474,20 @@ anat_norm$outfiles</pre>
 <li><p>Spatial smoothing should signal to noise depending on the size of activation</p></li>
 <li><p>Typically, the amount of smoothing is chosen a priori</p></li>
 <li><p>Usually global smoothing (same amount at each voxel), but can be adaptive (<code>adimpro</code> pacakge)</p></li>
+<li><p>Specified using the full-width half max (FWHM) for the Gaussian smoother (not \(\sigma\)): \(FWHM = \sigma \sqrt{8 \log(2)}\)</p></li>
 </ul>
 
 </article></slide><slide class=""><hgroup><h2>Spatial smoothing using a Gaussian</h2></hgroup><article  id="spatial-smoothing-using-a-gaussian-1">
 
-<ul>
-<li>Specified using the full-width half max (FWHM) for the Gaussian smoother (not \(\sigma\)): \(FWHM = \sigma \sqrt{8 \log(2)}\)</li>
-</ul>
+<div class="container">
+<div class="left-half">
+<img src="voxel_figure.gif" style="width: 90%; display: inline; margin: auto;"></div>
 
-<p><img src="3dgauss.png" style="width: 30%; display: block; margin: auto;"></p>
+<div style="font-size: 28pt;" class="right-half">
+<img src="3dgauss.png" style="width: 90%; display: inline; margin: auto;"></div>
 
 <div style="font-size: 10pt;">
-<p>From <a href='https://en.wikipedia.org/wiki/Gaussian_function#/media/File:Gaussian_2d.svg' title=''>https://en.wikipedia.org/wiki/Gaussian_function#/media/File:Gaussian_2d.svg</a></p></div>
+<p>From <a href='https://en.wikipedia.org/wiki/Gaussian_function#/media/File:Gaussian_2d.svg' title=''>https://en.wikipedia.org/wiki/Gaussian_function#/media/File:Gaussian_2d.svg</a></p></div></div>
 
 </article></slide><slide class=""><hgroup><h2>Spatial smoothing using a Gaussian</h2></hgroup><article  id="spatial-smoothing-using-a-gaussian-2">
 
@@ -628,9 +630,9 @@ ortho2(norm, spmt)</pre>
 <li>If you know <code>R</code> you’re good</li>
 </ul>
 
-</article></slide><slide class=""><hgroup><h2>References</h2></hgroup><article  class="unnumbered" id="references">
+</article></slide><slide class=""><hgroup><h2>References</h2></hgroup><article  id="references" class="unnumbered">
 
-<div class="references" id="refs">
+<div id="refs" class="references">
 <div id="ref-penny2011statistical">
 <p>Penny, William D, Karl J Friston, John T Ashburner, Stefan J Kiebel, and Thomas E Nichols. 2011. <em>Statistical Parametric Mapping: The Analysis of Functional Brain Images</em>. Academic press.</p></div></div></article></slide>
 

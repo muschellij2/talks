@@ -431,15 +431,22 @@ anat_norm2x2x2 = spm12_normalize_write( deformation = seg$deformation,
 
 - Usually global smoothing (same amount at each voxel), but can be adaptive (`adimpro` pacakge)
 
+- Specified using the full-width half max (FWHM) for the Gaussian smoother (not $\sigma$):  $FWHM = \sigma \sqrt{8 \log(2)}$
 
 ## Spatial smoothing using a Gaussian
 
-- Specified using the full-width half max (FWHM) for the Gaussian smoother (not $\sigma$):  $FWHM = \sigma \sqrt{8 \log(2)}$
 
-<img src="3dgauss.png" style="width: 30%; display: block; margin: auto;">
 
+<div class="container"> 
+   <div class="left-half">
+  <img src="voxel_figure.gif" style="width: 90%; display: inline; margin: auto;">
+  </div>
+  <div class="right-half" style="font-size: 28pt;">
+<img src="3dgauss.png" style="width: 90%; display: inline; margin: auto;">
+  </div>
 <div style="font-size: 10pt;">
 From https://en.wikipedia.org/wiki/Gaussian_function#/media/File:Gaussian_2d.svg
+</div>
 </div>
 
 
